@@ -1,0 +1,57 @@
+{
+  "codes": [
+    {
+      "id": "c-seed-oak",
+      "code": "eken01",
+      "label": "Plakett vid eken",
+      "type": "internal",
+      "target": "p-seed-oak",
+      "enabled": true,
+      "scanCount": 1,
+      "createdAt": "2026-05-29",
+      "updatedAt": "2026-05-29"
+    },
+    {
+      "id": "c-seed-ext",
+      "code": "info99",
+      "label": "Länk till kommunens sida (extern)",
+      "type": "external",
+      "target": "https://example.com",
+      "enabled": true,
+      "scanCount": 1,
+      "createdAt": "2026-05-29",
+      "updatedAt": "2026-05-29"
+    },
+    {
+      "id": "c-flower-tulip",
+      "code": "tulip",
+      "label": "Blomma: Tulpan (Wikipedia)",
+      "type": "external",
+      "target": "https://en.wikipedia.org/wiki/Tulip",
+      "enabled": true,
+      "scanCount": 4,
+      "createdAt": "2026-05-29",
+      "updatedAt": "2026-05-29"
+    },
+    {
+      "id": "c-flower-sunflower",
+      "code": "sunflower",
+      "label": "Blomma: Solros (Wikipedia)",
+      "type": "external",
+      "target": "https://en.wikipedia.org/wiki/Common_sunflower",
+      "enabled": true,
+      "scanCount": 2,
+      "createdAt": "2026-05-29",
+      "updatedAt": "2026-05-29"
+    }
+  ],
+  "pages": [
+    {
+      "id": "p-seed-oak",
+      "slug": "eken",
+      "title": "Eken vid dammen",
+      "body": "Det här trädet är en skogsek (Quercus robur) som planterades 1923.\n\nEken är ett av våra äldsta träd i parken och hyser ett rikt djurliv av insekter, fåglar och fladdermöss.\n\nVänligen klättra inte i trädet.",
+      "updatedAt": "2026-05-29"
+    }
+  ]
+}
