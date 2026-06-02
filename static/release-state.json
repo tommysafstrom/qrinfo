@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "current": {
+    "tag": "release/1",
+    "commit": "361d3a9",
+    "cfDeployId": "pi-production-20260602192522",
+    "deployedAt": "2026-06-02T19:25:23.010Z",
+    "url": "http://192.168.148.4:8080"
+  },
+  "previous": []
+}
