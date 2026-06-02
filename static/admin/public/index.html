@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>QR Info — Admin</title>
+  <base href="./">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>QR Info <span class="tag">admin</span></h1>
+    <nav>
+      <a href="#codes" data-view="codes" class="active">Codes</a>
+      <a href="#pending" data-view="pending">Pending</a>
+      <a href="#release" data-view="release">Release</a>
+      <a href="#releases" data-view="releases">Releases</a>
+    </nav>
+  </header>
+
+  <main id="app">
+    <section data-view="codes" class="view active">
+      <div class="view-header">
+        <h2>Codes</h2>
+        <button type="button" id="add-code-btn" class="primary">+ Add code</button>
+      </div>
+      <div id="codes-list" class="codes-list">
+        <p class="loading">Loading…</p>
+      </div>
+    </section>
+
+    <section data-view="pending" class="view">
+      <div class="view-header">
+        <h2>Pending changes</h2>
+        <button type="button" id="preview-btn" class="primary">Preview on dark site</button>
+      </div>
+      <p id="diff-baseline" class="hint"></p>
+      <div id="diff-summary"></div>
+      <div id="diff-sections"></div>
+
+      <div id="preview-progress" class="progress-panel" hidden>
+        <header>
+          <h3>Preview deploy</h3>
+          <button type="button" id="preview-close" class="ghost">×</button>
+        </header>
+        <ol class="phase-list" id="preview-phases"></ol>
+        <pre class="log" id="preview-log"></pre>
+        <div class="progress-result" id="preview-result"></div>
+      </div>
+    </section>
+
+    <section data-view="release" class="view">
+      <div class="view-header">
+        <h2>Release</h2>
+      </div>
+
+      <div class="release-block">
+        <h3>Working tree</h3>
+        <p id="working-tree-status" class="loading">Loading…</p>
+      </div>
+
+      <div class="release-block">
+        <h3>Tag a new release</h3>
+        <p class="hint">Once <code>codes.json</code> is committed, freeze it as
+          <code>release/&lt;n&gt;</code> for promotion to production.</p>
+        <div class="tag-actions">
+          <button type="button" id="tag-btn" class="primary" disabled>
+            Tag as <code>release/<span id="next-n">?</span></code>
+          </button>
+          <span id="tag-result" class="hint"></span>
+        </div>
+      </div>
+
+      <div class="release-block">
+        <h3>Existing release tags</h3>
+        <div id="release-list" class="loading">Loading…</div>
+      </div>
+
+      <div id="deploy-progress" class="progress-panel" hidden>
+        <header>
+          <h3>Deploying <code id="deploy-target"></code></h3>
+          <button type="button" id="deploy-close" class="ghost">×</button>
+        </header>
+        <ol class="phase-list" id="deploy-phases"></ol>
+        <pre class="log" id="deploy-log"></pre>
+        <div class="progress-result" id="deploy-result"></div>
+      </div>
+    </section>
+
+    <section data-view="releases" class="view">
+      <div class="view-header">
+        <h2>Releases</h2>
+        <span id="releases-mode" class="hint"></span>
+      </div>
+
+      <div id="releases-state">
+        <p class="loading">Loading…</p>
+      </div>
+
+      <div id="rollback-progress" class="progress-panel" hidden>
+        <header>
+          <h3>Rolling back</h3>
+          <button type="button" id="rollback-close" class="ghost">×</button>
+        </header>
+        <ol class="phase-list" id="rollback-phases"></ol>
+        <pre class="log" id="rollback-log"></pre>
+        <div class="progress-result" id="rollback-result"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="status">—</span>
+  </footer>
+
+  <dialog id="code-dialog">
+    <form id="code-form" novalidate>
+      <h3 id="code-form-title">Add code</h3>
+
+      <label class="field">
+        <span>Slug</span>
+        <input name="slug" type="text" required autocomplete="off"
+               pattern="^[a-z0-9][a-z0-9-]{2,30}$">
+        <small class="hint">lowercase letters/digits/hyphens, 3–31 chars; appears in the QR URL</small>
+        <small class="error" data-field-error="slug" hidden></small>
+      </label>
+
+      <label class="field">
+        <span>Label</span>
+        <input name="label" type="text" required maxlength="120" autocomplete="off">
+        <small class="hint">human-readable name shown on the public page</small>
+        <small class="error" data-field-error="label" hidden></small>
+      </label>
+
+      <fieldset class="field">
+        <legend>Type</legend>
+        <label class="inline"><input type="radio" name="type" value="external" checked> External URL</label>
+        <label class="inline"><input type="radio" name="type" value="internal"> Internal page</label>
+      </fieldset>
+
+      <label class="field">
+        <span id="target-label">Target URL</span>
+        <input name="target" type="text" required maxlength="2000" autocomplete="off">
+        <small class="hint" id="target-hint">e.g. https://en.wikipedia.org/wiki/Tulip</small>
+        <small class="error" data-field-error="target" hidden></small>
+      </label>
+
+      <label class="field inline">
+        <input type="checkbox" name="enabled" checked>
+        <span>Enabled</span>
+      </label>
+
+      <p class="error form-error" id="form-error" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" id="code-cancel">Cancel</button>
+        <button type="submit" class="primary" id="code-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+<script type="module" src="app.js"></script>
+</html>

@@ -1,0 +1,48 @@
+# Umami — self-hosted analytics for the QR site.
+#
+# Brings up Umami + its own Postgres. LAN/loopback only for now; expose it
+# publicly (Cloudflare Tunnel / Tailscale Funnel / Umami Cloud) only once a
+# public prod needs to reach it. See ../runbooks/metrics.md.
+#
+#   cd static/ops && docker compose up -d
+#
+# Required env — put in static/ops/.env (gitignored; `.env` is ignored anywhere):
+#   APP_SECRET         random string  →  openssl rand -hex 32
+#   POSTGRES_PASSWORD  random string for the DB
+# Optional:
+#   UMAMI_PORT         host port to publish Umami on (default 3001; the Pi's
+#                      3000 is taken by the teacher app, so don't use 3000)
+
+services:
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    # Publishes on all interfaces (LAN-reachable, which the Pi wants). For
+    # loopback-only, change to "127.0.0.1:${UMAMI_PORT:-3001}:3000".
+    ports:
+      - "${UMAMI_PORT:-3001}:3000"
+    environment:
+      DATABASE_URL: postgresql://umami:${POSTGRES_PASSWORD}@db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${APP_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - umami-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  umami-db:

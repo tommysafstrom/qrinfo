@@ -1,0 +1,19 @@
+{
+  "name": "qrinfo-static",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Static QR-redirect site + local admin tool",
+  "scripts": {
+    "build": "node admin/lib/build.mjs",
+    "admin": "node admin/server.mjs",
+    "serve": "node admin/lib/serve.mjs",
+    "tag": "node admin/lib/tag.mjs",
+    "deploy": "node admin/lib/deploy.mjs",
+    "rollback": "node admin/lib/rollback.mjs"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "zod": "^3.23.8"
+  }
+}
