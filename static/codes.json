@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "codes": [
+    {
+      "slug": "tulip",
+      "label": "Tulpan",
+      "type": "external",
+      "target": "https://en.wikipedia.org/wiki/Tulip",
+      "enabled": true,
+      "createdAt": "2026-05-30T00:00:00Z",
+      "updatedAt": "2026-05-30T00:00:00Z"
+    },
+    {
+      "slug": "sunflower",
+      "label": "Solros",
+      "type": "external",
+      "target": "https://en.wikipedia.org/wiki/Common_sunflower",
+      "enabled": true,
+      "createdAt": "2026-05-30T00:00:00Z",
+      "updatedAt": "2026-05-30T00:00:00Z"
+    },
+    {
+      "slug": "alleumgiganteum",
+      "label": "Alleum Giganteum",
+      "type": "external",
+      "target": "https://en.wikipedia.org/wiki/Allium_giganteum",
+      "enabled": true,
+      "createdAt": "2026-06-02T17:38:28.605Z",
+      "updatedAt": "2026-06-02T17:38:28.605Z"
+    },
+    {
+      "slug": "humle",
+      "label": "Humle",
+      "type": "external",
+      "target": "https://sv.wikipedia.org/wiki/Humle",
+      "enabled": true,
+      "createdAt": "2026-06-02T17:39:41.570Z",
+      "updatedAt": "2026-06-02T17:39:41.570Z"
+    }
+  ]
+}
