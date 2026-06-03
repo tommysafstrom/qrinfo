@@ -100,6 +100,26 @@ async function emitInfo(distDir) {
   }
 }
 
+// In-browser camera scanner: copy the page, its script, and the vendored ZXing
+// bundle, and publish a slim code registry the scanner resolves against
+// client-side. Only enabled codes are exposed.
+async function emitScanner(codes, distDir) {
+  for (const f of ['scan.html', 'scan.js']) {
+    const src = resolve(ROOT, f);
+    if (await pathExists(src)) await cp(src, resolve(distDir, f));
+  }
+  const vendorSrc = resolve(ROOT, 'vendor');
+  if (await pathExists(vendorSrc)) {
+    await cp(vendorSrc, resolve(distDir, 'vendor'), { recursive: true });
+  }
+  const registry = {
+    codes: codes
+      .filter(c => c.enabled)
+      .map(c => ({ slug: c.slug, label: c.label, type: c.type, target: c.target })),
+  };
+  await writeFile(resolve(distDir, 'codes.json'), JSON.stringify(registry, null, 2) + '\n');
+}
+
 async function emitQrs(codes, distDir, baseUrl) {
   const qrDir = resolve(distDir, 'qr');
   await mkdir(qrDir, { recursive: true });
@@ -171,6 +191,7 @@ export async function build({ ref = null, target = 'local' } = {}) {
   await emitIndex(codes, DIST);
   await emitNotFound(DIST);
   await emitInfo(DIST);
+  await emitScanner(codes, DIST);
   await emitQrs(codes, DIST, baseUrl);
   const version = await emitVersion(DIST, { ref, target });
 

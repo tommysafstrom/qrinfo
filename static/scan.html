@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Skanna — QR Info</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: Canvas;
+      color: CanvasText;
+      display: flex;
+      flex-direction: column;
+    }
+    header { padding: 1rem 1rem 0.5rem; }
+    h1 { font-size: 1.25rem; margin: 0; }
+    #status { margin: 0.25rem 0 0; font-size: 0.9rem; opacity: 0.75; }
+
+    /* Live camera — stays running while the destination shows below. */
+    .camera {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 45vh;
+      background: #000;
+      overflow: hidden;
+    }
+    .camera video { width: 100%; height: 100%; object-fit: cover; }
+    .camera .overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem; text-align: center;
+      color: #fff; font-size: 0.95rem;
+    }
+
+    .dest { flex: 1; display: flex; flex-direction: column; border-top: 1px solid color-mix(in srgb, CanvasText 15%, transparent); min-height: 0; }
+    .dest .bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.75rem; padding: 0.5rem 1rem;
+    }
+    .dest .bar .label { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dest .bar a { flex: none; font-size: 0.9rem; }
+    .dest iframe { flex: 1; width: 100%; border: 0; min-height: 50vh; }
+    .dest .placeholder { padding: 2rem 1rem; text-align: center; opacity: 0.55; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Skanna QR-kod</h1>
+    <p id="status">Startar kameran…</p>
+  </header>
+
+  <div class="camera">
+    <video id="video" muted playsinline></video>
+    <div id="overlay" class="overlay hidden"></div>
+  </div>
+
+  <section class="dest">
+    <div id="bar" class="bar hidden">
+      <span id="label" class="label"></span>
+      <a id="open" target="_blank" rel="noopener noreferrer" class="hidden">Öppna i ny flik ↗</a>
+    </div>
+    <p id="placeholder" class="placeholder">Den skannade sidan visas här.</p>
+    <iframe id="frame" class="hidden" title="Skannad sida"></iframe>
+  </section>
+
+  <script src="/vendor/zxing-browser-0.2.0.min.js"></script>
+  <script src="/scan.js"></script>
+</body>
+</html>
