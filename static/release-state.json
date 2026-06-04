@@ -3,8 +3,8 @@
   "current": {
     "tag": "release/11",
     "commit": "cb8fc2e",
-    "cfDeployId": "pi-production-20260604194421",
-    "deployedAt": "2026-06-04T19:44:21.835Z",
+    "cfDeployId": "pi-production-20260604194428",
+    "deployedAt": "2026-06-04T19:44:28.956Z",
     "url": "http://192.168.148.4:8080"
   },
   "previous": [
