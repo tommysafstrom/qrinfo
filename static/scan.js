@@ -21,15 +21,17 @@
     status: document.getElementById("status"),
     video: document.getElementById("video"),
     overlay: document.getElementById("overlay"),
-    bar: document.getElementById("bar"),
+    dest: document.getElementById("dest"),
     label: document.getElementById("label"),
     open: document.getElementById("open"),
-    placeholder: document.getElementById("placeholder"),
+    close: document.getElementById("close"),
     frame: document.getElementById("frame"),
   };
 
   var codesBySlug = {};
   var last = { slug: null, at: 0 };
+
+  els.close.addEventListener("click", hideDestination);
 
   function setStatus(msg) { els.status.textContent = msg; }
 
@@ -50,13 +52,18 @@
     return null;
   }
 
+  function hideDestination() {
+    els.dest.classList.add("hidden");
+    els.frame.src = "about:blank";
+    last = { slug: null, at: 0 }; // allow the same code to reopen after closing
+    setStatus("Rikta kameran mot en QR-kod…");
+  }
+
   function showDestination(code) {
     var external = code.type === "external";
     var url = external ? code.target : "/q/" + code.slug; // internal → let CF rewrite serve the info page
 
     els.label.textContent = code.label || code.slug;
-    els.bar.classList.remove("hidden");
-    els.placeholder.classList.add("hidden");
 
     if (external) {
       els.open.href = code.target;
@@ -66,7 +73,7 @@
     }
 
     els.frame.src = url;
-    els.frame.classList.remove("hidden");
+    els.dest.classList.remove("hidden");
     setStatus("Visar: " + (code.label || code.slug));
   }
 

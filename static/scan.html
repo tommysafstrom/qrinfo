@@ -12,24 +12,14 @@
     body {
       margin: 0;
       font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: Canvas;
-      color: CanvasText;
-      display: flex;
-      flex-direction: column;
-    }
-    header { padding: 1rem 1rem 0.5rem; }
-    h1 { font-size: 1.25rem; margin: 0; }
-    #status { margin: 0.25rem 0 0; font-size: 0.9rem; opacity: 0.75; }
-
-    /* Live camera — stays running while the destination shows below. */
-    .camera {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      max-height: 45vh;
       background: #000;
+      color: #fff;
       overflow: hidden;
     }
+
+    /* Live camera fills the whole screen and keeps running underneath the
+       destination so a new QR code can be scanned through the overlay. */
+    .camera { position: fixed; inset: 0; background: #000; }
     .camera video { width: 100%; height: 100%; object-fit: cover; }
     .camera .overlay {
       position: absolute; inset: 0;
@@ -38,36 +28,64 @@
       color: #fff; font-size: 0.95rem;
     }
 
-    .dest { flex: 1; display: flex; flex-direction: column; border-top: 1px solid color-mix(in srgb, CanvasText 15%, transparent); min-height: 0; }
-    .dest .bar {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 0.75rem; padding: 0.5rem 1rem;
+    /* Heading + status, floating over the camera at the top. */
+    header {
+      position: fixed; inset: 0 0 auto 0; z-index: 30;
+      padding: calc(env(safe-area-inset-top) + 0.75rem) 1rem 0.75rem;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0));
+      pointer-events: none;
     }
-    .dest .bar .label { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .dest .bar a { flex: none; font-size: 0.9rem; }
-    .dest iframe { flex: 1; width: 100%; border: 0; min-height: 50vh; }
-    .dest .placeholder { padding: 2rem 1rem; text-align: center; opacity: 0.55; }
+    h1 { font-size: 1.25rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+    #status { margin: 0.25rem 0 0; font-size: 0.9rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+
+    /* Destination: a translucent full-screen overlay so the camera (and any
+       QR code held in front of it) stays visible behind the linked page. */
+    .dest {
+      position: fixed; inset: 0; z-index: 20;
+      display: flex; flex-direction: column;
+    }
+    .dest .bar {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: calc(env(safe-area-inset-top) + 0.5rem) 0.75rem 0.5rem;
+      background: rgba(0,0,0,0.78);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .dest .bar .label { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dest .bar a { flex: none; font-size: 0.85rem; color: #6cb2ff; }
+    .dest .bar button {
+      flex: none; appearance: none; border: 0; cursor: pointer;
+      background: rgba(255,255,255,0.15); color: #fff;
+      width: 2rem; height: 2rem; border-radius: 50%;
+      font-size: 1.1rem; line-height: 1; display: grid; place-items: center;
+    }
+    /* The iframe itself is opaque; the wrapper dims it so the camera shows
+       through. Pointer events stay on so the page is still readable/scrollable. */
+    .dest .frame-wrap { flex: 1; min-height: 0; opacity: 0.82; }
+    .dest iframe { width: 100%; height: 100%; border: 0; background: #fff; }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Skanna QR-kod</h1>
-    <p id="status">Startar kameran…</p>
-  </header>
-
   <div class="camera">
     <video id="video" muted playsinline></video>
     <div id="overlay" class="overlay hidden"></div>
   </div>
 
-  <section class="dest">
-    <div id="bar" class="bar hidden">
+  <header>
+    <h1>Skanna QR-kod</h1>
+    <p id="status">Startar kameran…</p>
+  </header>
+
+  <section id="dest" class="dest hidden">
+    <div class="bar">
       <span id="label" class="label"></span>
       <a id="open" target="_blank" rel="noopener noreferrer" class="hidden">Öppna i ny flik ↗</a>
+      <button id="close" type="button" aria-label="Stäng">✕</button>
     </div>
-    <p id="placeholder" class="placeholder">Den skannade sidan visas här.</p>
-    <iframe id="frame" class="hidden" title="Skannad sida"></iframe>
+    <div class="frame-wrap">
+      <iframe id="frame" title="Skannad sida"></iframe>
+    </div>
   </section>
 
   <script src="/vendor/zxing-browser-0.2.0.min.js"></script>
