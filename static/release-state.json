@@ -1,13 +1,20 @@
 {
   "version": 1,
   "current": {
-    "tag": "release/12",
-    "commit": "c574185",
-    "cfDeployId": "pi-production-20260604195722",
-    "deployedAt": "2026-06-04T19:57:22.153Z",
+    "tag": "release/13",
+    "commit": "e5a894f",
+    "cfDeployId": "pi-production-20260604200444",
+    "deployedAt": "2026-06-04T20:04:44.471Z",
     "url": "http://192.168.148.4:8080"
   },
   "previous": [
+    {
+      "tag": "release/12",
+      "commit": "c574185",
+      "cfDeployId": "pi-production-20260604195722",
+      "deployedAt": "2026-06-04T19:57:22.153Z",
+      "url": "http://192.168.148.4:8080"
+    },
     {
       "tag": "release/11",
       "commit": "cb8fc2e",
