@@ -17,12 +17,10 @@
       overflow: hidden;
     }
 
-    /* Live camera fills the whole screen while idle. When a page is shown it
-       shrinks to a floating thumbnail (see .scanning) that the user can aim a
-       new QR code at, so the camera never has to render behind an overlay. */
+    /* Full-screen live camera. Shown while scanning, hidden (and stopped) once a
+       destination or the history list is open. No inline thumbnail mode. */
     .camera {
       position: fixed; inset: 0; z-index: 10; background: #000;
-      transition: inset 0.25s ease, width 0.25s ease, height 0.25s ease, border-radius 0.25s ease;
     }
     .camera video { width: 100%; height: 100%; object-fit: cover; }
     .camera .overlay {
@@ -31,36 +29,34 @@
       padding: 1.5rem; text-align: center;
       color: #fff; font-size: 0.95rem;
     }
-    /* Thumbnail mode: camera floats in the top-left corner at a quarter of the
-       viewport (half the width × half the height = 1/4 of the screen area),
-       on top of the page. */
-    body.scanning .camera {
-      inset: calc(env(safe-area-inset-top) + 0.75rem) auto auto 0.75rem;
-      width: 50vw; height: 50vh;
-      z-index: 40; border-radius: 0.9rem; overflow: hidden;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.45);
-      border: 2px solid rgba(255,255,255,0.85);
-    }
-    .cam-hint {
-      position: absolute; inset: auto 0 0 0; z-index: 1;
-      padding: 0.15rem; text-align: center;
-      font-size: 0.6rem; color: #fff;
-      background: rgba(0,0,0,0.55);
-      display: none;
-    }
-    body.scanning .cam-hint { display: block; }
+    /* While a page or the history is open we don't need the camera on screen. */
+    body.viewing .camera { display: none; }
 
-    /* Heading + status, floating over the idle camera at the top. Hidden once
-       a page is shown (the page's own bar takes over). */
-    header {
-      position: fixed; inset: 0 0 auto 0; z-index: 30;
-      padding: calc(env(safe-area-inset-top) + 0.75rem) 1rem 0.75rem;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0));
-      pointer-events: none;
+    /* Persistent top bar with the two actions. Sits above everything. */
+    .topbar {
+      position: fixed; inset: 0 0 auto 0; z-index: 50;
+      display: flex; gap: 0.5rem; align-items: center;
+      padding: calc(env(safe-area-inset-top) + 0.6rem) 0.75rem 0.6rem;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0));
     }
-    body.scanning header { display: none; }
-    h1 { font-size: 1.25rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
-    #status { margin: 0.25rem 0 0; font-size: 0.9rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+    .topbar button {
+      appearance: none; border: 0; cursor: pointer;
+      padding: 0.55rem 0.9rem; border-radius: 999px;
+      font-size: 0.95rem; font-weight: 600; line-height: 1;
+      background: rgba(255,255,255,0.16); color: #fff;
+      backdrop-filter: blur(6px);
+    }
+    .topbar button.primary { background: #2563eb; }
+    .topbar .spacer { flex: 1; }
+
+    /* Status line, floating under the top bar over the idle camera. */
+    #status {
+      position: fixed; z-index: 30;
+      inset: calc(env(safe-area-inset-top) + 3.4rem) 1rem auto;
+      margin: 0; font-size: 0.9rem; opacity: 0.9; text-align: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6); pointer-events: none;
+    }
+    body.viewing #status { display: none; }
 
     /* Destination: the linked page, full-screen and opaque so it's readable. */
     .dest {
@@ -109,6 +105,47 @@
     }
     .wiki .credit { margin-top: 2rem; font-size: 0.8rem; color: #666; }
     .wiki .credit a { color: #2563eb; }
+
+    /* History ("Koder"): a grid of previously-scanned codes as thumbnails. */
+    .history {
+      position: fixed; inset: 0; z-index: 45;
+      display: none; flex-direction: column; background: #111; color: #fff;
+    }
+    body.history-open .history { display: flex; }
+    .history .bar {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: calc(env(safe-area-inset-top) + 0.5rem) 0.75rem 0.5rem;
+      background: #000;
+    }
+    .history .bar .label { flex: 1; font-weight: 600; }
+    .history .bar button {
+      flex: none; appearance: none; border: 0; cursor: pointer;
+      background: rgba(255,255,255,0.15); color: #fff;
+      width: 2rem; height: 2rem; border-radius: 50%;
+      font-size: 1.1rem; line-height: 1; display: grid; place-items: center;
+    }
+    .history .grid {
+      flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+      gap: 0.75rem; padding: 0.75rem 0.75rem 2rem;
+      align-content: start;
+    }
+    .history .card {
+      appearance: none; border: 0; cursor: pointer; text-align: left;
+      background: #1d1d1f; color: #fff; border-radius: 0.8rem; overflow: hidden;
+      padding: 0; display: flex; flex-direction: column;
+    }
+    .history .card .thumb {
+      width: 100%; aspect-ratio: 1 / 1; object-fit: cover;
+      background: #2a2a2c; display: block;
+    }
+    .history .card .name {
+      padding: 0.5rem 0.6rem; font-size: 0.85rem; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .history .empty {
+      padding: 3rem 1.5rem; text-align: center; color: #aaa; font-size: 0.95rem;
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -116,13 +153,15 @@
   <div class="camera">
     <video id="video" muted playsinline></video>
     <div id="overlay" class="overlay hidden"></div>
-    <div class="cam-hint">Skanna ny kod</div>
   </div>
 
-  <header>
-    <h1>Skanna QR-kod</h1>
-    <p id="status">Startar kameran…</p>
-  </header>
+  <div class="topbar">
+    <button id="scanNew" type="button" class="primary">Skanna ny kod</button>
+    <button id="showHistory" type="button">Koder</button>
+    <span class="spacer"></span>
+  </div>
+
+  <p id="status">Startar kameran…</p>
 
   <section id="dest" class="dest hidden">
     <div class="bar">
@@ -142,6 +181,14 @@
         </div>
       </article>
     </div>
+  </section>
+
+  <section id="history" class="history">
+    <div class="bar">
+      <span class="label">Skannade koder</span>
+      <button id="historyClose" type="button" aria-label="Stäng">✕</button>
+    </div>
+    <div id="historyGrid" class="grid"></div>
   </section>
 
   <script src="/vendor/zxing-browser-0.2.0.min.js"></script>

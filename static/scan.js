@@ -1,30 +1,31 @@
-// In-browser continuous QR scanner for the QR Info static site.
+// In-browser QR scanner for the QR Info static site.
 //
-// Runs the phone camera (getUserMedia, needs the trusted HTTPS this site is
-// served over) and decodes continuously. When it reads one of OUR codes it
-// shows the destination while the camera keeps running, so the next plaque can
-// be scanned without leaving the page.
+// Full-screen camera scanning, started on load and via the "Skanna ny kod"
+// button. On a hit the camera STOPS and the destination is shown (no inline
+// camera). A "Koder" button opens a grid of previously-scanned codes (stored on
+// this device) as Wikipedia-image thumbnails; tapping one re-opens it.
 //
 // Wikipedia targets are rendered as a custom image-first page from the
-// Wikipedia REST API (so we control the styling). Other external targets are
-// shown in an iframe; internal codes load /q/<slug>.
-//
-// Resolution is client-side: the build publishes a slim /codes.json
-// (slug → label + target), so no server API is needed.
+// Wikipedia REST API. Other external targets are shown in an iframe; internal
+// codes load /q/<slug>. Resolution is client-side against the published
+// /codes.json (slug → label + target).
 
 (function () {
   "use strict";
 
   // Same allowlist the rest of the system uses for /q/<slug>.
   var VALID_CODE = /^[a-z0-9]{4,16}$/;
-  // Ignore a repeat decode of the same slug within this window so a code held
-  // in frame doesn't reload the page continuously.
+  // Ignore a repeat decode of the same slug within this window.
   var REPEAT_MS = 2000;
+  var HISTORY_KEY = "qrinfo.history.v1";
+  var HISTORY_MAX = 60;
 
   var els = {
     status: document.getElementById("status"),
     video: document.getElementById("video"),
     overlay: document.getElementById("overlay"),
+    scanNew: document.getElementById("scanNew"),
+    showHistory: document.getElementById("showHistory"),
     dest: document.getElementById("dest"),
     label: document.getElementById("label"),
     close: document.getElementById("close"),
@@ -36,13 +37,23 @@
     wikiReadMore: document.getElementById("wikiReadMore"),
     wikiMore: document.getElementById("wikiMore"),
     wikiCredit: document.getElementById("wikiCredit"),
+    history: document.getElementById("history"),
+    historyGrid: document.getElementById("historyGrid"),
+    historyClose: document.getElementById("historyClose"),
   };
 
   var codesBySlug = {};
   var last = { slug: null, at: 0 };
   var wikiReq = 0; // guards against a slow fetch landing after the view changed
 
-  els.close.addEventListener("click", hideDestination);
+  var reader = null; // BrowserMultiFormatReader
+  var controls = null; // active camera controls (.stop())
+  var scanning = false;
+
+  els.close.addEventListener("click", function () { closeViews(); startScanner(); });
+  els.historyClose.addEventListener("click", function () { closeViews(); startScanner(); });
+  els.scanNew.addEventListener("click", function () { closeViews(); startScanner(); });
+  els.showHistory.addEventListener("click", openHistory);
 
   function setStatus(msg) { els.status.textContent = msg; }
 
@@ -63,15 +74,193 @@
     return null;
   }
 
-  function hideDestination() {
+  // ---- camera control -------------------------------------------------------
+
+  function stopCamera() {
+    if (controls) { try { controls.stop(); } catch (e) {} controls = null; }
+    scanning = false;
+  }
+
+  // Close any open destination/history view and reveal the camera area.
+  function closeViews() {
     wikiReq++; // invalidate any in-flight wiki fetch
     els.dest.classList.add("hidden");
     els.dest.classList.remove("is-wiki");
     els.frame.src = "about:blank";
-    document.body.classList.remove("scanning");
-    last = { slug: null, at: 0 }; // allow the same code to reopen after closing
-    setStatus("Rikta kameran mot en QR-kod…");
+    document.body.classList.remove("history-open");
+    document.body.classList.remove("viewing");
+    last = { slug: null, at: 0 };
   }
+
+  function startScanner() {
+    if (scanning) return;
+    if (!window.isSecureContext) {
+      showOverlay("Kameran kräver en säker anslutning (HTTPS).");
+      setStatus("Kameran är blockerad.");
+      return;
+    }
+    if (!window.ZXingBrowser || !window.ZXingBrowser.BrowserMultiFormatReader) {
+      showOverlay("Kunde inte ladda skannern.");
+      return;
+    }
+    els.overlay.classList.add("hidden");
+    if (!reader) reader = new window.ZXingBrowser.BrowserMultiFormatReader();
+    scanning = true;
+    setStatus("Rikta kameran mot en QR-kod…");
+
+    reader
+      .decodeFromConstraints(
+        { video: { facingMode: "environment" } },
+        els.video,
+        function (result) {
+          if (!result) return;
+          var slug = extractSlug(result.getText());
+          if (slug) {
+            handleSlug(slug);
+          } else {
+            setStatus("Den här koden hör inte till QR Info.");
+          }
+        }
+      )
+      .then(function (c) { controls = c; })
+      .catch(function (err) {
+        scanning = false;
+        var name = err && err.name;
+        if (name === "NotAllowedError") {
+          showOverlay("Kameraåtkomst nekades. Tillåt kameran och ladda om sidan.");
+        } else if (name === "NotFoundError") {
+          showOverlay("Ingen kamera hittades på den här enheten.");
+        } else {
+          showOverlay("Kunde inte starta kameran.");
+        }
+        setStatus("Kameran kunde inte startas.");
+      });
+  }
+
+  function handleSlug(slug) {
+    var now = Date.now();
+    if (last.slug === slug && now - last.at < REPEAT_MS) return;
+    last = { slug: slug, at: now };
+
+    var code = codesBySlug[slug];
+    if (!code || code.enabled === false) {
+      setStatus("Den här koden finns inte eller är avstängd.");
+      return;
+    }
+    stopCamera(); // a hit opens a page; no inline camera
+    recordHistory(code);
+    showDestination(code);
+  }
+
+  // ---- history (this device) ------------------------------------------------
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function saveHistory(list) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  // Move/insert this code at the front of the history (most-recent first),
+  // preserving any cached thumbnail we fetched earlier.
+  function recordHistory(code) {
+    var list = loadHistory();
+    var prev = null;
+    list = list.filter(function (h) {
+      if (h.slug === code.slug) { prev = h; return false; }
+      return true;
+    });
+    list.unshift({
+      slug: code.slug,
+      label: code.label || code.slug,
+      type: code.type,
+      target: code.target,
+      thumb: prev && prev.thumb ? prev.thumb : null,
+    });
+    if (list.length > HISTORY_MAX) list = list.slice(0, HISTORY_MAX);
+    saveHistory(list);
+  }
+
+  // Persist a fetched thumbnail URL for a slug so the grid is instant next time.
+  function cacheThumb(slug, url) {
+    if (!url) return;
+    var list = loadHistory();
+    var changed = false;
+    list.forEach(function (h) {
+      if (h.slug === slug && h.thumb !== url) { h.thumb = url; changed = true; }
+    });
+    if (changed) saveHistory(list);
+  }
+
+  function openHistory() {
+    stopCamera();
+    document.body.classList.add("viewing");
+    document.body.classList.add("history-open");
+    renderHistory();
+  }
+
+  function renderHistory() {
+    var list = loadHistory();
+    els.historyGrid.innerHTML = "";
+    if (!list.length) {
+      var empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "Inga skannade koder än. Tryck “Skanna ny kod”.";
+      els.historyGrid.appendChild(empty);
+      return;
+    }
+    list.forEach(function (h) {
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "card";
+
+      var img = document.createElement("img");
+      img.className = "thumb";
+      img.alt = h.label;
+      img.loading = "lazy";
+      if (h.thumb) {
+        img.src = h.thumb;
+      } else {
+        fetchThumb(h, img); // lazily resolve a Wikipedia lead image
+      }
+
+      var name = document.createElement("span");
+      name.className = "name";
+      name.textContent = h.label;
+
+      card.appendChild(img);
+      card.appendChild(name);
+      card.addEventListener("click", function () {
+        var code = codesBySlug[h.slug] || h;
+        closeViews();
+        stopCamera();
+        document.body.classList.add("viewing");
+        recordHistory(code);
+        showDestination(code);
+      });
+      els.historyGrid.appendChild(card);
+    });
+  }
+
+  // Resolve a thumbnail for a history card from the Wikipedia summary image,
+  // then cache it so future opens are instant.
+  function fetchThumb(h, img) {
+    var article = wikiArticle(h.target);
+    if (!article) return;
+    fetch(summaryApi(article), { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var src = data.thumbnail || data.originalimage;
+        if (src && src.source) {
+          img.src = src.source;
+          cacheThumb(h.slug, src.source);
+        }
+      })
+      .catch(function () { /* leave placeholder */ });
+  }
+
+  // ---- Wikipedia article ----------------------------------------------------
 
   // Parse a Wikipedia article URL into { lang, title } if it is one, else null.
   function wikiArticle(raw) {
@@ -86,13 +275,17 @@
     return null;
   }
 
+  function summaryApi(article) {
+    return (
+      "https://" + article.lang + ".wikipedia.org/api/rest_v1/page/summary/" +
+      encodeURIComponent(article.title.replace(/ /g, "_"))
+    );
+  }
+
   // Render the image-first Wikipedia view from the REST summary API, then lazily
   // fetch the fuller extract behind a "Läs mer" button.
   function showWikipedia(code, article) {
     var token = ++wikiReq;
-    var api =
-      "https://" + article.lang + ".wikipedia.org/api/rest_v1/page/summary/" +
-      encodeURIComponent(article.title.replace(/ /g, "_"));
 
     els.wikiHero.hidden = true;
     els.wikiHero.removeAttribute("src");
@@ -105,10 +298,10 @@
 
     els.dest.classList.add("is-wiki");
     els.dest.classList.remove("hidden");
-    document.body.classList.add("scanning");
+    document.body.classList.add("viewing");
     setStatus("Visar: " + (code.label || code.slug));
 
-    fetch(api, { headers: { Accept: "application/json" } })
+    fetch(summaryApi(article), { headers: { Accept: "application/json" } })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (token !== wikiReq) return; // user moved on
@@ -119,6 +312,9 @@
           els.wikiHero.src = img.source;
           els.wikiHero.alt = data.title || "";
           els.wikiHero.hidden = false;
+        }
+        if (data.thumbnail && data.thumbnail.source) {
+          cacheThumb(code.slug, data.thumbnail.source);
         }
         var pageUrl =
           (data.content_urls &&
@@ -132,8 +328,7 @@
       })
       .catch(function () {
         if (token !== wikiReq) return;
-        els.wikiSummary.textContent =
-          "Kunde inte ladda artikeln just nu.";
+        els.wikiSummary.textContent = "Kunde inte ladda artikeln just nu.";
       });
   }
 
@@ -141,6 +336,8 @@
   // the summary into the article without leaving our styled page.
   function wireReadMore(token, article, pageUrl) {
     els.wikiReadMore.classList.remove("hidden");
+    els.wikiReadMore.disabled = false;
+    els.wikiReadMore.textContent = "Läs mer ↓";
     els.wikiReadMore.onclick = function () {
       els.wikiReadMore.disabled = true;
       els.wikiReadMore.textContent = "Laddar…";
@@ -202,67 +399,12 @@
     els.dest.classList.remove("is-wiki");
     els.frame.src = external ? code.target : "/q/" + code.slug;
     els.dest.classList.remove("hidden");
-    document.body.classList.add("scanning"); // shrink camera to a thumbnail
+    document.body.classList.add("viewing");
     setStatus("Visar: " + (code.label || code.slug));
   }
 
-  function handleSlug(slug) {
-    var now = Date.now();
-    if (last.slug === slug && now - last.at < REPEAT_MS) return;
-    last = { slug: slug, at: now };
-
-    var code = codesBySlug[slug];
-    if (!code || code.enabled === false) {
-      setStatus("Den här koden finns inte eller är avstängd.");
-      return;
-    }
-    showDestination(code);
-  }
-
-  function startScanner() {
-    if (!window.isSecureContext) {
-      showOverlay("Kameran kräver en säker anslutning (HTTPS).");
-      setStatus("Kameran är blockerad.");
-      return;
-    }
-    if (!window.ZXingBrowser || !window.ZXingBrowser.BrowserMultiFormatReader) {
-      showOverlay("Kunde inte ladda skannern.");
-      return;
-    }
-
-    var reader = new window.ZXingBrowser.BrowserMultiFormatReader();
-    setStatus("Rikta kameran mot en QR-kod…");
-
-    reader
-      .decodeFromConstraints(
-        { video: { facingMode: "environment" } },
-        els.video,
-        function (result) {
-          if (!result) return;
-          var slug = extractSlug(result.getText());
-          if (slug) {
-            handleSlug(slug);
-          } else {
-            setStatus("Den här koden hör inte till QR Info.");
-          }
-        }
-      )
-      .then(function (controls) {
-        // Release the camera when the page is hidden/navigated away.
-        window.addEventListener("pagehide", function () { controls.stop(); });
-      })
-      .catch(function (err) {
-        var name = err && err.name;
-        if (name === "NotAllowedError") {
-          showOverlay("Kameraåtkomst nekades. Tillåt kameran och ladda om sidan.");
-        } else if (name === "NotFoundError") {
-          showOverlay("Ingen kamera hittades på den här enheten.");
-        } else {
-          showOverlay("Kunde inte starta kameran.");
-        }
-        setStatus("Kameran kunde inte startas.");
-      });
-  }
+  // Release the camera when the page is hidden/navigated away.
+  window.addEventListener("pagehide", stopCamera);
 
   // Load the published code registry, then start the camera.
   fetch("/codes.json", { cache: "no-store" })
