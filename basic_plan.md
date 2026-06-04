@@ -38,6 +38,46 @@ is fine on a trusted LAN; phones must be on the same network for codes to resolv
 
 ---
 
+## Status — as of 2026-05-29
+
+**Phases 1–6 are built and verified.** `npm run build` and `npm run lint` pass; the
+resolver, all CRUD, and QR PNG/SVG generation were exercised end-to-end on the dev server
+(internal/external redirects, fallback, scan-count bump, create with auto-slug, URL
+validation 400, delete-protection 409). Code lives in `app/`.
+
+**Phase 7 is scaffolded but not deployed** — `.github/workflows/deploy.yml` and the Pi
+setup steps in `app/README.md` are written, but nothing has been run on the Pi yet (no
+pm2 process, no mDNS, no nginx, no real-phone scan).
+
+**Phase 8 is partially done** — input validation and the happy-path walkthrough are done;
+admin auth / HTTPS / rate-limiting remain deliberately deferred.
+
+**Phase 0 (Mermaid docs) is not started.**
+
+Notable deltas from the original plan:
+- Internal pages render **body as plain text** (whitespace-preserved), not markdown→HTML —
+  deliberate, to avoid stored XSS while admin is open. **Image support is not implemented.**
+- The resolver fallback **renders a Swedish page but returns HTTP 200** (status not yet set
+  to 404/410). Redirects use **307** (Next's `redirect()`), not 302.
+- Scan tracking is a **counter only** — no timestamped scan log.
+- `code` slug = 6 chars of `[a-z0-9]`; record ids are generated (`c-…` / `p-…`) rather than
+  the `c001` / `p001` shown in the sketch below.
+
+---
+
+## Working agreements
+
+- **Keep this plan's progress up to date while executing** — check boxes off as work lands,
+  and annotate deltas inline.
+- **Use subagents in parallel whenever the work is independent.** When a phase splits into
+  pieces that don't depend on each other (e.g. several Mermaid diagrams, per-flower/per-code
+  asset generation, authoring multiple info pages, independent docs vs. code), dispatch them
+  as parallel agents in a single batch rather than doing them sequentially. Keep work that
+  shares mutable state (the running dev server, `data/db.json` writes) on one agent to avoid
+  conflicts.
+
+---
+
 ## Framework Recommendation
 
 **Next.js (TypeScript)** — identical stack and deployment story to the teacher project,
@@ -122,12 +162,12 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 
 **Suggested agent:** `claude` (Sonnet 4.6)
 
-- [ ] Scaffold Next.js (TypeScript + Tailwind) in `app/`, set `output: 'standalone'` in `next.config`
-- [ ] Define schema in `lib/types.ts`: `Code`, `Page`, `DB`
-- [ ] Implement `lib/db.ts` — typed read/write helpers with a promise-chain write-lock (copy the teacher pattern)
-- [ ] Seed `data/db.json` with: one external code, one internal code + its info page
-- [ ] Add `QR_BASE_URL` env handling (e.g. `http://qrpi.local`) via `.env.local.example`
-- [ ] Verify `npm run dev` boots and `npm run build` passes
+- [x] Scaffold Next.js (TypeScript + Tailwind) in `app/`, set `output: 'standalone'` in `next.config`
+- [x] Define schema in `lib/types.ts`: `Code`, `Page`, `DB`
+- [x] Implement `lib/db.ts` — typed read/write helpers with a promise-chain write-lock (copy the teacher pattern)
+- [x] Seed `data/db.json` with: one external code, one internal code + its info page
+- [x] Add `QR_BASE_URL` env handling (e.g. `http://qrpi.local`) via `.env.local.example`
+- [x] Verify `npm run dev` boots and `npm run build` passes
 
 ---
 
@@ -136,13 +176,13 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 
 **Suggested agent:** `claude` (Sonnet 4.6)
 
-- [ ] Build `GET /q/[code]`:
-  - [ ] look up code; if missing/disabled → Swedish fallback page (404/410)
-  - [ ] `external` → 302 to target URL
-  - [ ] `internal` → serve/redirect to `/info/[slug]`
-- [ ] Increment a scan counter (and optional timestamped scan log) on each resolve
-- [ ] Validate `code` against an allowlist regex (e.g. `/^[a-z0-9]{6,12}$/`)
-- [ ] Test all three branches with seeded codes
+- [x] Build `GET /q/[code]`:
+  - [x] look up code; if missing/disabled → Swedish fallback page _(renders, but returns HTTP 200 — not yet 404/410)_
+  - [x] `external` → redirect to target URL _(307, via Next `redirect()`)_
+  - [x] `internal` → serve/redirect to `/info/[slug]`
+- [x] Increment a scan counter on each resolve _(counter only; no timestamped log)_
+- [x] Validate `code` against an allowlist regex _(`/^[a-z0-9]{4,16}$/`)_
+- [x] Test all three branches with seeded codes
 
 ---
 
@@ -151,9 +191,9 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 
 **Suggested agent:** `claude` (Sonnet 4.6)
 
-- [ ] Build `GET /info/[slug]` — render title, body (markdown → HTML), optional images
-- [ ] Mobile-first layout (these are read on phones)
-- [ ] 404 for unknown slugs
+- [x] Build `GET /info/[slug]` — render title + body _(plain text / whitespace-preserved, not markdown→HTML; images not implemented)_
+- [x] Mobile-first layout (these are read on phones)
+- [x] 404 for unknown slugs _(`notFound()`)_
 
 ---
 
@@ -162,12 +202,12 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 
 **Suggested agent:** `claude` (Sonnet 4.6)
 
-- [ ] `/admin` list view: label · type · target · enabled toggle · scan count
-- [ ] `/admin/codes/new` and `/admin/codes/[id]` — create/edit:
-  - [ ] choose `internal` (pick an info page) or `external` (enter URL)
-  - [ ] enable/disable, edit label, delete
-- [ ] API: `GET/POST /api/codes`, `GET/PUT/DELETE /api/codes/[id]`
-- [ ] Auto-generate a unique short `code` slug on create
+- [x] `/admin` list view: label · target · enabled badge · scan count
+- [x] `/admin/codes/new` and `/admin/codes/[id]` — create/edit:
+  - [x] choose `internal` (pick an info page) or `external` (enter URL)
+  - [x] enable/disable, edit label, delete
+- [x] API: `GET/POST /api/codes`, `GET/PUT/DELETE /api/codes/[id]`
+- [x] Auto-generate a unique short `code` slug on create
 
 ---
 
@@ -176,9 +216,9 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 
 **Suggested agent:** `claude` (Sonnet 4.6)
 
-- [ ] `/admin/pages` and `/admin/pages/[id]` — create/edit title + body (+ optional images)
-- [ ] API: `GET/POST /api/pages`, `GET/PUT/DELETE /api/pages/[id]`
-- [ ] Guard: block deleting a page still referenced by an internal code
+- [x] `/admin/pages`, `/admin/pages/new`, `/admin/pages/[id]` — create/edit title + body _(no image upload)_
+- [x] API: `GET/POST /api/pages`, `GET/PUT/DELETE /api/pages/[id]`
+- [x] Guard: block deleting a page still referenced by an internal code _(409)_
 
 ---
 
@@ -187,11 +227,11 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 
 **Suggested agent:** `claude` (Sonnet 4.6)
 
-- [ ] Add `lib/qr.ts` using the `qrcode` library
-- [ ] `GET /api/codes/[id]/qr?format=png|svg` → encodes `${QR_BASE_URL}/q/${code}`
-- [ ] "Download QR" buttons (PNG for print, SVG for scaling) on the code edit page
-- [ ] Sensible defaults: high error-correction (level H, survives wear on a plaque), quiet-zone margin
-- [ ] Verify a generated code scans correctly with a real phone on the LAN
+- [x] Add `lib/qr.ts` using the `qrcode` library
+- [x] `GET /api/codes/[id]/qr?format=png|svg` → encodes `${QR_BASE_URL}/q/${code}`
+- [x] "Download QR" buttons (PNG for print, SVG for scaling) + inline preview on the code edit page
+- [x] Sensible defaults: high error-correction (level H, survives wear on a plaque), quiet-zone margin
+- [ ] Verify a generated code scans correctly with a real phone on the LAN _(needs the Pi deployed)_
 
 ---
 
@@ -200,11 +240,14 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 
 **Suggested agent:** `claude` (Sonnet 4.6)
 
-- [ ] `.github/workflows/deploy.yml` on the `[self-hosted, pi]` runner: `git pull` → `npm ci --prefer-offline` → `npm run build` → copy `.next/static` + `public` into `.next/standalone` → `pm2 restart qrinfo`
-- [ ] Register the app with pm2 on **port 3001** (`pm2 start … --name qrinfo`)
+- [x] `.github/workflows/deploy.yml` on the `[self-hosted, pi]` runner: `git pull` → `npm ci --prefer-offline` → `npm run build` → copy `.next/static` + `public` into `.next/standalone` → `pm2 restart qrinfo`
+- [ ] Register the app with pm2 on **port 3001** (`pm2 start … --name qrinfo`) _(steps documented in `app/README.md`; not yet run on the Pi)_
 - [ ] LAN reachability: set up mDNS hostname `qrpi.local` (avahi) **or** assign a static LAN IP; set `QR_BASE_URL` to match
 - [ ] Reverse proxy (nginx) on port 80 → :3001 so QR URLs drop the port
 - [ ] Scan a printed code from a phone on the same Wi‑Fi end-to-end
+
+> **Standalone gotcha (documented in README):** start the pm2 process from the `app/` root
+> (`pm2 start .next/standalone/server.js`) so `process.cwd()` resolves `data/db.json`.
 
 ---
 
@@ -213,10 +256,32 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 
 **Suggested agent:** `claude` with `/verify` and `/security-review` skills
 
-- [ ] Full walkthrough: create internal code + page → download QR → scan → see page; create external code → scan → redirect; disable a code → scan → fallback
-- [ ] Validate all API inputs (code slug regex, URL format on external targets, length limits)
+- [x] Full walkthrough _(verified via dev server + curl: internal/external resolve, disabled/unknown → fallback, create + auto-slug; **not yet from a physical phone**)_
+- [x] Validate all API inputs (code slug regex, URL format on external targets, length limits)
 - [ ] **Deferred (do before exposing beyond LAN):** add admin auth (password gate on `/admin` + `/api`), HTTPS, rate-limiting on the resolver
-- [ ] `README.md` with `npm install && npm run dev` + Pi deploy notes
+- [x] `README.md` with `npm install && npm run dev` + Pi deploy notes
+
+---
+
+### Phase 9 — Two flower QR examples (demo)
+> Goal: two real, scannable QR codes saved as files in the repo, each redirecting to a
+> flower's Wikipedia article — proving the full scan → resolve → external redirect path
+> from a phone on the LAN.
+
+**Suggested agent:** `claude` (Sonnet 4.6). _Parallelisable per-flower in principle, but the
+two codes share `data/db.json` + one dev server, so done on a single agent to avoid write
+conflicts (see Working agreements)._
+
+- [x] Add two `external` codes to `data/db.json`: `tulip` → en.wikipedia.org/wiki/Tulip,
+      `sunflower` → en.wikipedia.org/wiki/Common_sunflower
+- [x] Encode QR images against the reachable LAN host (`QR_BASE_URL=http://192.168.148.128:3001`)
+- [x] Save QR files in the repo under `qr-examples/` — `tulip.png/.svg`, `sunflower.png/.svg`
+- [x] Add a public `/examples` page that displays both QR codes large with their flower name
+- [x] Verify `/q/tulip` and `/q/sunflower` return 307 → the Wikipedia URLs on the LAN host
+- [x] Confirm `npm run build` + `npm run lint` stay green
+
+> **Phone test:** dev server must be running and bound to the LAN (`next dev` listens on
+> 0.0.0.0), phone on the same Wi‑Fi. For the Pi later, regenerate with `QR_BASE_URL=http://qrpi.local`.
 
 ---
 
@@ -233,29 +298,33 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
 | 6 — QR generation | `claude` | Sonnet 4.6 | Library integration |
 | 7 — Pi deployment | `claude` | Sonnet 4.6 | CI/CD + pm2, mirrors teacher |
 | 8 — Hardening & demo | `claude` + `/verify` + `/security-review` | Sonnet 4.6 | Live walkthrough + input validation |
+| 9 — Flower QR examples | `claude` | Sonnet 4.6 | Shared db/server → single agent (not parallel) |
 
 ---
 
 ## Data Model (sketch)
 
+_Reflects the implemented `lib/types.ts` / seed `data/db.json`. Record ids are generated
+at runtime (`c-<base36>` / `p-<base36>`); the seed uses readable ids._
+
 ```json
 {
   "codes": [
     {
-      "id": "c001",
-      "code": "oak1a2",
+      "id": "c-seed-oak",
+      "code": "eken01",
       "label": "Plakett vid eken",
       "type": "internal",
-      "target": "p001",
+      "target": "p-seed-oak",
       "enabled": true,
       "scanCount": 0,
       "createdAt": "2026-05-29",
       "updatedAt": "2026-05-29"
     },
     {
-      "id": "c002",
-      "code": "shop99",
-      "label": "Butiken (extern)",
+      "id": "c-seed-ext",
+      "code": "info99",
+      "label": "Länk till kommunens sida (extern)",
       "type": "external",
       "target": "https://example.com",
       "enabled": true,
@@ -266,11 +335,10 @@ proxy (nginx) so QR URLs can omit the port (`http://qrpi.local/q/<code>` → :30
   ],
   "pages": [
     {
-      "id": "p001",
+      "id": "p-seed-oak",
       "slug": "eken",
       "title": "Eken vid dammen",
-      "body": "Det här trädet planterades 1923 ...",
-      "images": [],
+      "body": "Det här trädet är en skogsek ...",
       "updatedAt": "2026-05-29"
     }
   ]

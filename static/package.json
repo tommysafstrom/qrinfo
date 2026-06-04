@@ -5,12 +5,12 @@
   "type": "module",
   "description": "Static QR-redirect site + local admin tool",
   "scripts": {
-    "build": "node admin/lib/build.mjs",
-    "admin": "node admin/server.mjs",
-    "serve": "node admin/lib/serve.mjs",
-    "tag": "node admin/lib/tag.mjs",
-    "deploy": "node admin/lib/deploy.mjs",
-    "rollback": "node admin/lib/rollback.mjs"
+    "build": "node --env-file-if-exists=.env admin/lib/build.mjs",
+    "admin": "node --env-file-if-exists=.env admin/server.mjs",
+    "serve": "node --env-file-if-exists=.env admin/lib/serve.mjs",
+    "tag": "node --env-file-if-exists=.env admin/lib/tag.mjs",
+    "deploy": "node --env-file-if-exists=.env admin/lib/deploy.mjs",
+    "rollback": "node --env-file-if-exists=.env admin/lib/rollback.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4",

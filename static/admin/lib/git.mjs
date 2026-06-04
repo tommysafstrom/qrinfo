@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +24,42 @@ async function git(...args) {
 
 function httpError(status, message) {
   return Object.assign(new Error(message), { status });
+}
+
+// Extract a subtree of a git ref into destDir. Uses `git archive <ref> <prefix>`
+// piped through tar so the result is a faithful, working-tree-independent
+// snapshot of that path at that ref. `prefix` is repo-relative (e.g. "static");
+// destDir receives the contents of that prefix (the prefix dir itself is stripped).
+export async function archiveSubtreeToDir(ref, prefix, destDir) {
+  const cwd = await repoRoot();
+  await import('node:fs/promises').then(fs => fs.mkdir(destDir, { recursive: true }));
+  await new Promise((resolveP, reject) => {
+    const archive = spawn('git', ['archive', '--format=tar', ref, prefix], { cwd });
+    // strip the leading "<prefix>/" so destDir holds the subtree contents directly
+    const depth = prefix.split('/').filter(Boolean).length;
+    const tar = spawn('tar', ['-x', `--strip-components=${depth}`, '-C', destDir], {
+      stdio: ['pipe', 'inherit', 'pipe'],
+    });
+    let archiveErr = '';
+    let tarErr = '';
+    archive.stderr.on('data', d => { archiveErr += d.toString(); });
+    tar.stderr.on('data', d => { tarErr += d.toString(); });
+    archive.stdout.pipe(tar.stdin);
+    let archiveDone = false, tarDone = false, failed = false;
+    const fail = err => { if (!failed) { failed = true; reject(err); } };
+    archive.on('error', fail);
+    tar.on('error', fail);
+    archive.on('close', code => {
+      archiveDone = true;
+      if (code !== 0) return fail(new Error(`git archive ${ref} ${prefix} exited ${code}: ${archiveErr.trim()}`));
+      if (tarDone) resolveP();
+    });
+    tar.on('close', code => {
+      tarDone = true;
+      if (code !== 0) return fail(new Error(`tar extract exited ${code}: ${tarErr.trim()}`));
+      if (archiveDone) resolveP();
+    });
+  });
 }
 
 export async function showAtRef(ref, repoRelativePath) {
@@ -131,4 +167,51 @@ export async function tagCommit(tag) {
 export async function commitDate(ref) {
   const { stdout } = await git('log', '-1', '--format=%cI', ref);
   return stdout.trim();
+}
+
+// Commits reachable from `to` but not from `from` (i.e. what's new since `from`).
+// If `from` is null/undefined, returns the commits for `to` alone (HEAD only here
+// would be huge, so callers pass a bounded `to` like HEAD with a real `from`).
+// Each commit: { sha (short), subject, date }.
+export async function commitsBetween(from, to = 'HEAD') {
+  const range = from ? `${from}..${to}` : to;
+  let stdout;
+  try {
+    ({ stdout } = await git('log', '--format=%h\x1f%s\x1f%cI', range));
+  } catch {
+    return [];
+  }
+  return stdout
+    .split('\n')
+    .filter(Boolean)
+    .map(line => {
+      const [sha, subject, date] = line.split('\x1f');
+      return { sha, subject, date };
+    });
+}
+
+// File-level change summary between two refs, restricted to `static/` so the
+// report reflects the deployed site only. Returns { added, modified, deleted }
+// counts plus a `files` array of { status: 'A'|'M'|'D'|'R'|..., path }.
+export async function diffNameStatus(from, to = 'HEAD', pathspec = 'static') {
+  const range = from ? `${from}..${to}` : to;
+  let stdout;
+  try {
+    ({ stdout } = await git('diff', '--name-status', range, '--', pathspec));
+  } catch {
+    return { added: 0, modified: 0, deleted: 0, files: [] };
+  }
+  const files = stdout
+    .split('\n')
+    .filter(Boolean)
+    .map(line => {
+      const [code, ...rest] = line.split('\t');
+      return { status: code[0], path: rest[rest.length - 1] };
+    });
+  return {
+    added: files.filter(f => f.status === 'A').length,
+    modified: files.filter(f => f.status === 'M' || f.status === 'R' || f.status === 'C').length,
+    deleted: files.filter(f => f.status === 'D').length,
+    files,
+  };
 }

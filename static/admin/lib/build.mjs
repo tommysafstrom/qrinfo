@@ -1,11 +1,12 @@
-import { readFile, writeFile, mkdir, rm, cp, stat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm, cp, stat, mkdtemp } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 import QRCode from 'qrcode';
 
 import { codesJsonSchema } from './schema.mjs';
 import { resolveBaseUrl } from './baseUrl.mjs';
-import { showAtRef, shortSha } from './git.mjs';
+import { shortSha, archiveSubtreeToDir } from './git.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');          // static/
@@ -20,10 +21,8 @@ async function pathExists(p) {
   try { await stat(p); return true; } catch { return false; }
 }
 
-async function loadCodesJson(ref) {
-  const text = ref
-    ? await showAtRef(ref, 'static/codes.json')
-    : await readFile(resolve(ROOT, 'codes.json'), 'utf8');
+async function loadCodesJson(srcRoot) {
+  const text = await readFile(resolve(srcRoot, 'codes.json'), 'utf8');
   const raw = JSON.parse(text);
   return codesJsonSchema.parse(raw);
 }
@@ -76,8 +75,8 @@ async function emitRedirects(codes, distDir) {
   await writeFile(resolve(distDir, '_redirects'), lines.join('\n'));
 }
 
-async function emitIndex(codes, distDir) {
-  const template = await readFile(resolve(ROOT, 'index.html'), 'utf8');
+async function emitIndex(codes, distDir, srcRoot) {
+  const template = await readFile(resolve(srcRoot, 'index.html'), 'utf8');
   const enabled = codes.filter(c => c.enabled);
   const cards = enabled.length === 0
     ? '      <p class="empty">Inga koder publicerade ännu.</p>'
@@ -89,12 +88,12 @@ async function emitIndex(codes, distDir) {
   await writeFile(resolve(distDir, 'index.html'), rendered);
 }
 
-async function emitNotFound(distDir) {
-  await cp(resolve(ROOT, 'not-found.html'), resolve(distDir, 'not-found.html'));
+async function emitNotFound(distDir, srcRoot) {
+  await cp(resolve(srcRoot, 'not-found.html'), resolve(distDir, 'not-found.html'));
 }
 
-async function emitInfo(distDir) {
-  const infoSrc = resolve(ROOT, 'info');
+async function emitInfo(distDir, srcRoot) {
+  const infoSrc = resolve(srcRoot, 'info');
   if (await pathExists(infoSrc)) {
     await cp(infoSrc, resolve(distDir, 'info'), { recursive: true });
   }
@@ -103,12 +102,12 @@ async function emitInfo(distDir) {
 // In-browser camera scanner: copy the page, its script, and the vendored ZXing
 // bundle, and publish a slim code registry the scanner resolves against
 // client-side. Only enabled codes are exposed.
-async function emitScanner(codes, distDir) {
+async function emitScanner(codes, distDir, srcRoot) {
   for (const f of ['scan.html', 'scan.js']) {
-    const src = resolve(ROOT, f);
+    const src = resolve(srcRoot, f);
     if (await pathExists(src)) await cp(src, resolve(distDir, f));
   }
-  const vendorSrc = resolve(ROOT, 'vendor');
+  const vendorSrc = resolve(srcRoot, 'vendor');
   if (await pathExists(vendorSrc)) {
     await cp(vendorSrc, resolve(distDir, 'vendor'), { recursive: true });
   }
@@ -131,7 +130,7 @@ async function emitQrs(codes, distDir, baseUrl) {
   }
 }
 
-async function emitVersion(distDir, { ref, target }) {
+async function emitVersion(distDir, { ref, target, srcRoot }) {
   // Best-effort git info. Builds run on the Pi from a tarball with no .git, so
   // never let a failed git call break the build — fall back to nulls.
   let sha = null;
@@ -141,7 +140,7 @@ async function emitVersion(distDir, { ref, target }) {
 
   let version = null;
   try {
-    const pkg = JSON.parse(await readFile(resolve(ROOT, 'package.json'), 'utf8'));
+    const pkg = JSON.parse(await readFile(resolve(srcRoot, 'package.json'), 'utf8'));
     version = pkg.version ?? null;
   } catch { /* no package.json — leave null */ }
 
@@ -156,11 +155,10 @@ async function emitVersion(distDir, { ref, target }) {
   return info;
 }
 
-async function checkInternalTargets(codes, ref) {
-  if (ref) return; // ref-based build trusts the tagged tree
+async function checkInternalTargets(codes, srcRoot) {
   const internal = codes.filter(c => c.enabled && c.type === 'internal');
   for (const c of internal) {
-    const p = resolve(ROOT, 'info', `${c.target}.html`);
+    const p = resolve(srcRoot, 'info', `${c.target}.html`);
     if (!(await pathExists(p))) {
       throw new Error(
         `code "${c.slug}" (internal) → info/${c.target}.html does not exist on disk`,

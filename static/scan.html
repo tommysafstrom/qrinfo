@@ -17,9 +17,13 @@
       overflow: hidden;
     }
 
-    /* Live camera fills the whole screen and keeps running underneath the
-       destination so a new QR code can be scanned through the overlay. */
-    .camera { position: fixed; inset: 0; background: #000; }
+    /* Live camera fills the whole screen while idle. When a page is shown it
+       shrinks to a floating thumbnail (see .scanning) that the user can aim a
+       new QR code at, so the camera never has to render behind an overlay. */
+    .camera {
+      position: fixed; inset: 0; z-index: 10; background: #000;
+      transition: inset 0.25s ease, border-radius 0.25s ease;
+    }
     .camera video { width: 100%; height: 100%; object-fit: cover; }
     .camera .overlay {
       position: absolute; inset: 0;
@@ -27,29 +31,44 @@
       padding: 1.5rem; text-align: center;
       color: #fff; font-size: 0.95rem;
     }
+    /* Thumbnail mode: camera floats bottom-right, on top of the page. */
+    body.scanning .camera {
+      inset: auto 0.75rem calc(env(safe-area-inset-bottom) + 0.75rem) auto;
+      width: 33vw; max-width: 150px; aspect-ratio: 3 / 4;
+      z-index: 40; border-radius: 0.9rem; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+      border: 2px solid rgba(255,255,255,0.85);
+    }
+    .cam-hint {
+      position: absolute; inset: auto 0 0 0; z-index: 1;
+      padding: 0.15rem; text-align: center;
+      font-size: 0.6rem; color: #fff;
+      background: rgba(0,0,0,0.55);
+      display: none;
+    }
+    body.scanning .cam-hint { display: block; }
 
-    /* Heading + status, floating over the camera at the top. */
+    /* Heading + status, floating over the idle camera at the top. Hidden once
+       a page is shown (the page's own bar takes over). */
     header {
       position: fixed; inset: 0 0 auto 0; z-index: 30;
       padding: calc(env(safe-area-inset-top) + 0.75rem) 1rem 0.75rem;
       background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0));
       pointer-events: none;
     }
+    body.scanning header { display: none; }
     h1 { font-size: 1.25rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
     #status { margin: 0.25rem 0 0; font-size: 0.9rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
 
-    /* Destination: a translucent full-screen overlay so the camera (and any
-       QR code held in front of it) stays visible behind the linked page. */
+    /* Destination: the linked page, full-screen and opaque so it's readable. */
     .dest {
       position: fixed; inset: 0; z-index: 20;
-      display: flex; flex-direction: column;
+      display: flex; flex-direction: column; background: #fff;
     }
     .dest .bar {
       display: flex; align-items: center; gap: 0.5rem;
       padding: calc(env(safe-area-inset-top) + 0.5rem) 0.75rem 0.5rem;
-      background: rgba(0,0,0,0.78);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      background: #000; color: #fff;
     }
     .dest .bar .label { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dest .bar a { flex: none; font-size: 0.85rem; color: #6cb2ff; }
@@ -59,10 +78,20 @@
       width: 2rem; height: 2rem; border-radius: 50%;
       font-size: 1.1rem; line-height: 1; display: grid; place-items: center;
     }
-    /* The iframe itself is opaque; the wrapper dims it so the camera shows
-       through. Pointer events stay on so the page is still readable/scrollable. */
-    .dest .frame-wrap { flex: 1; min-height: 0; opacity: 0.82; }
+    .dest .frame-wrap { position: relative; flex: 1; min-height: 0; }
     .dest iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+    /* Fallback shown when the page refuses to be embedded. */
+    .dest .blocked {
+      position: absolute; inset: 0; display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1rem; padding: 2rem; text-align: center; color: #111;
+    }
+    .dest.blocked .frame-wrap iframe { visibility: hidden; }
+    .dest.blocked .blocked { display: flex; }
+    .dest .blocked a {
+      display: inline-block; padding: 0.6rem 1.2rem; border-radius: 0.6rem;
+      background: #2563eb; color: #fff; text-decoration: none; font-weight: 600;
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -70,6 +99,7 @@
   <div class="camera">
     <video id="video" muted playsinline></video>
     <div id="overlay" class="overlay hidden"></div>
+    <div class="cam-hint">Skanna ny kod</div>
   </div>
 
   <header>
@@ -85,6 +115,10 @@
     </div>
     <div class="frame-wrap">
       <iframe id="frame" title="Skannad sida"></iframe>
+      <div class="blocked">
+        <p>Den här sidan kan inte visas här.</p>
+        <a id="blockedOpen" target="_blank" rel="noopener noreferrer">Öppna sidan ↗</a>
+      </div>
     </div>
   </section>
 

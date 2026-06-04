@@ -311,43 +311,121 @@ fieldset.field {
 .good { color: var(--good); }
 .bad  { color: var(--bad); }
 
-.stack-row {
+/* ── Live release card (Releases view) ── */
+.live-release {
   border: 1px solid var(--border);
+  border-left: 5px solid var(--good);
   border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.5rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  background: color-mix(in srgb, var(--good) 6%, transparent);
 }
-.stack-row.current { border-left: 4px solid var(--good); }
-.stack-row.rollback-target { border-left: 4px solid var(--accent); }
-.stack-row.past { border-left: 4px solid var(--border); opacity: 0.85; }
-
-.stack-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.stack-meta .tag {
+.live-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--good);
+  margin-bottom: 0.4rem;
+}
+.live-meta { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+.live-meta .tag.big {
   font-family: ui-monospace, "Courier New", monospace;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.15rem;
 }
-.stack-meta .commit {
+.live-meta .commit {
   font-family: ui-monospace, "Courier New", monospace;
   color: var(--muted);
   font-size: 0.85rem;
 }
-
-.stack-extra {
+.live-extra {
   display: flex;
-  flex-direction: column;
+  gap: 1rem;
+  flex-wrap: wrap;
   font-size: 0.8rem;
   color: var(--muted);
-  min-width: 0;
+  margin: 0.35rem 0 0.75rem;
 }
-.stack-extra .url {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.live-extra .url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-action .rollback-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
 }
+
+/* ── Rollback history list ── */
+.history-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  counter-reset: none;
+}
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+  flex-wrap: wrap;
+}
+.history-row:last-child { border-bottom: none; }
+.history-row .step {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem; height: 1.5rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+  color: var(--muted);
+  font-size: 0.75rem;
+  flex: none;
+}
+.history-row .tag {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-weight: 600;
+}
+.history-row .commit { font-family: ui-monospace, "Courier New", monospace; color: var(--muted); font-size: 0.8rem; }
+.history-row .date { color: var(--muted); font-size: 0.78rem; }
+.history-row button { margin-left: auto; }
+.badge.next-rollback { color: var(--accent); border-color: var(--accent); }
+
+/* ── Next-release preview (Release view) ── */
+.next-release {
+  margin: 0.75rem 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, CanvasText 3%, transparent);
+}
+.next-release-head { font-size: 0.9rem; margin-bottom: 0.5rem; }
+.next-release details { margin-top: 0.4rem; }
+.next-release summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); }
+.next-release .commit-list,
+.next-release .file-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+.next-release .commit-list li,
+.next-release .file-list li { padding: 0.15rem 0; }
+.next-release .commit {
+  font-family: ui-monospace, "Courier New", monospace;
+  color: var(--muted);
+}
+.chg { font-size: 0.82rem; font-weight: 600; margin-right: 0.4rem; }
+.chg.added { color: var(--good); }
+.chg.modified { color: var(--accent); }
+.chg.deleted { color: var(--bad); }
+.status {
+  display: inline-block;
+  width: 1.1rem; text-align: center;
+  font-family: ui-monospace, "Courier New", monospace;
+  font-weight: 700;
+}
+.status-A { color: var(--good); }
+.status-M, .status-R, .status-C { color: var(--accent); }
+.status-D { color: var(--bad); }
 
 /* Preview progress panel */
 

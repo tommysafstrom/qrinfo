@@ -1,0 +1,30 @@
+name: Deploy to Pi
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, pi]
+    steps:
+      - name: Pull latest code
+        working-directory: /home/claudeuser/qrinfo
+        run: git pull origin main
+
+      - name: Install dependencies
+        working-directory: /home/claudeuser/qrinfo/app
+        run: npm ci --prefer-offline
+
+      - name: Build
+        working-directory: /home/claudeuser/qrinfo/app
+        run: npm run build
+
+      - name: Copy static assets into standalone
+        working-directory: /home/claudeuser/qrinfo/app
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public 2>/dev/null || true
+
+      - name: Restart app
+        run: pm2 restart qrinfo

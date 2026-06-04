@@ -14,7 +14,7 @@ import { diffCodes } from './diff.mjs';
 import { showAtRef } from './git.mjs';
 import { codesJsonSchema } from './schema.mjs';
 import { runPreview } from './preview.mjs';
-import { createReleaseTag, listReleases, suggestNextN, workingTreeReport } from './tag.mjs';
+import { createReleaseTag, listReleases, suggestNextN, workingTreeReport, nextReleasePreview } from './tag.mjs';
 import { runDeploy } from './deploy.mjs';
 import { runRollback } from './rollback.mjs';
 
@@ -153,7 +153,8 @@ async function getReleases(_req, res) {
   const releases = await listReleases();
   const nextN = suggestNextN(releases);
   const workingTree = await workingTreeReport();
-  sendJson(res, 200, { releases, nextN, workingTree });
+  const nextRelease = await nextReleasePreview();
+  sendJson(res, 200, { releases, nextN, workingTree, nextRelease });
 }
 
 async function postTag(req, res, ctx) {

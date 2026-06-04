@@ -459,6 +459,53 @@ function renderWorkingTree(wt) {
   }
 }
 
+function renderNextRelease(next) {
+  const el = $('#next-release-preview');
+  el.classList.remove('loading');
+  if (!next) { el.innerHTML = ''; return; }
+
+  if (next.firstRelease) {
+    el.innerHTML = '<p class="hint">This will be the <strong>first</strong> release — the entire current site will be deployed.</p>';
+    return;
+  }
+
+  const { commits, files, baseTag } = next;
+  if (commits.length === 0) {
+    el.innerHTML = `<p class="hint">Nothing new since <code>${escapeHtml(baseTag)}</code> — HEAD matches the live release. Commit changes first.</p>`;
+    return;
+  }
+
+  // file change counts (added / modified / deleted)
+  const counts = [];
+  if (files.added) counts.push(`<span class="chg added">+${files.added} new</span>`);
+  if (files.modified) counts.push(`<span class="chg modified">~${files.modified} changed</span>`);
+  if (files.deleted) counts.push(`<span class="chg deleted">−${files.deleted} deleted</span>`);
+  const countsHtml = counts.length ? counts.join(' ') : '<span class="hint">no file changes</span>';
+
+  const commitItems = commits
+    .map(c => `<li><code class="commit">${escapeHtml(c.sha)}</code> ${escapeHtml(c.subject)}</li>`)
+    .join('');
+
+  const fileItems = files.files
+    .map(f => `<li><span class="status status-${escapeHtml(f.status)}">${escapeHtml(f.status)}</span> <code>${escapeHtml(f.path)}</code></li>`)
+    .join('');
+
+  el.innerHTML = `
+    <div class="next-release-head">
+      <strong>${commits.length} commit${commits.length === 1 ? '' : 's'}</strong>
+      since <code>${escapeHtml(baseTag)}</code> (live) — ${countsHtml}
+    </div>
+    <details open>
+      <summary>Commits (${commits.length})</summary>
+      <ul class="commit-list">${commitItems}</ul>
+    </details>
+    <details>
+      <summary>Files changed (${files.files.length})</summary>
+      <ul class="file-list">${fileItems || '<li class="hint">none</li>'}</ul>
+    </details>
+  `;
+}
+
 function renderReleaseList(releases) {
   const el = $('#release-list');
   el.classList.remove('loading');
@@ -485,6 +532,7 @@ async function loadRelease() {
     $('#next-n').textContent = data.nextN;
     $('#tag-btn').disabled = !data.workingTree.clean;
     renderWorkingTree(data.workingTree);
+    renderNextRelease(data.nextRelease);
     renderReleaseList(data.releases);
   } catch (err) {
     $('#working-tree-status').innerHTML = `<span class="bad">error: ${escapeHtml(err.message)}</span>`;
@@ -584,30 +632,10 @@ async function runTag() {
 
 // ─── Releases view (state machine + rollback) ───────────────────────────────
 
-function renderReleaseEntry(entry, kind, index) {
-  if (!entry) return '';
-  const action = kind === 'current'
-    ? '<span class="badge enabled">production</span>'
-    : kind === 'rollback-target'
-      ? `<button type="button" class="primary" data-action="rollback">Rollback to this</button>`
-      : `<button type="button" data-action="deploy" data-tag="${escapeHtml(entry.tag)}">Promote</button>`;
-  const url = entry.url
+function releaseUrlHtml(entry) {
+  return entry.url
     ? `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener">${escapeHtml(entry.url)}</a>`
     : '(no url)';
-  return `
-    <article class="stack-row ${kind}">
-      <div class="stack-meta">
-        <code class="tag">${escapeHtml(entry.tag)}</code>
-        <span class="commit">${escapeHtml(entry.commit)}</span>
-        ${entry.cfDeployId ? `<span class="hint">cf=${escapeHtml(entry.cfDeployId)}</span>` : ''}
-      </div>
-      <div class="stack-extra">
-        <span class="date">${escapeHtml(entry.deployedAt)}</span>
-        <span class="url">${url}</span>
-      </div>
-      <div class="stack-action">${action}</div>
-    </article>
-  `;
 }
 
 function renderReleasesState(state) {
@@ -621,18 +649,58 @@ function renderReleasesState(state) {
   }
 
   const parts = [];
+  const rollbackTarget = state.previous[0] ?? null;
+
+  // ── Live now, with a single clear rollback action ──
   if (state.current) {
-    parts.push('<h3>Current</h3>');
-    parts.push(renderReleaseEntry(state.current, 'current', -1));
+    const c = state.current;
+    const rollbackBtn = rollbackTarget
+      ? `<button type="button" class="danger" data-action="rollback">↩ Roll back current release</button>
+         <p class="rollback-hint">This replaces the live release
+           <code>${escapeHtml(c.tag)}</code> with
+           <code>${escapeHtml(rollbackTarget.tag)}</code> (the previous one).</p>`
+      : `<p class="rollback-hint">No earlier release to roll back to.</p>`;
+
+    parts.push(`
+      <article class="live-release">
+        <div class="live-badge">● LIVE NOW</div>
+        <div class="live-meta">
+          <code class="tag big">${escapeHtml(c.tag)}</code>
+          <span class="commit">${escapeHtml(c.commit)}</span>
+        </div>
+        <div class="live-extra">
+          <span class="date">deployed ${escapeHtml(c.deployedAt)}</span>
+          <span class="url">${releaseUrlHtml(c)}</span>
+        </div>
+        <div class="live-action">${rollbackBtn}</div>
+      </article>
+    `);
   }
+
+  // ── History: where rollbacks will walk back through, newest first ──
   if (state.previous.length > 0) {
-    parts.push('<h3>Previous (stack — top first)</h3>');
+    parts.push('<h3>Rollback history <span class="hint">(newest first — each rollback steps down one)</span></h3>');
+    parts.push('<ol class="history-list">');
     state.previous.forEach((entry, i) => {
-      parts.push(renderReleaseEntry(entry, i === 0 ? 'rollback-target' : 'past', i));
+      const tag = i === 0
+        ? '<span class="badge next-rollback">next rollback target</span>'
+        : '';
+      parts.push(`
+        <li class="history-row">
+          <span class="step">${i + 1}</span>
+          <code class="tag">${escapeHtml(entry.tag)}</code>
+          <span class="commit">${escapeHtml(entry.commit)}</span>
+          <span class="date">${escapeHtml(entry.deployedAt)}</span>
+          ${tag}
+          <button type="button" class="ghost" data-action="deploy" data-tag="${escapeHtml(entry.tag)}">Promote to live</button>
+        </li>
+      `);
     });
+    parts.push('</ol>');
   } else if (state.current) {
-    parts.push('<p class="hint">No prior releases on the stack — rollback unavailable.</p>');
+    parts.push('<p class="hint">No earlier releases recorded yet — nothing to roll back to.</p>');
   }
+
   el.innerHTML = parts.join('');
 }
 

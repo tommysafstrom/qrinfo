@@ -26,7 +26,10 @@
     open: document.getElementById("open"),
     close: document.getElementById("close"),
     frame: document.getElementById("frame"),
+    blockedOpen: document.getElementById("blockedOpen"),
   };
+
+  var blockTimer = null;
 
   var codesBySlug = {};
   var last = { slug: null, at: 0 };
@@ -53,27 +56,64 @@
   }
 
   function hideDestination() {
+    if (blockTimer) { clearTimeout(blockTimer); blockTimer = null; }
     els.dest.classList.add("hidden");
+    els.dest.classList.remove("blocked");
     els.frame.src = "about:blank";
+    document.body.classList.remove("scanning");
     last = { slug: null, at: 0 }; // allow the same code to reopen after closing
     setStatus("Rikta kameran mot en QR-kod…");
   }
 
+  // Many sites (incl. desktop Wikipedia) send X-Frame-Options/CSP that forbid
+  // embedding, so the iframe renders blank/black. For the hosts we know, swap
+  // in a framing-friendly equivalent; the "Öppna i ny flik" link still points
+  // at the canonical target.
+  function framableUrl(raw) {
+    try {
+      var u = new URL(raw);
+      var m = u.hostname.match(/^([a-z-]+)\.(?:m\.)?wikipedia\.org$/);
+      if (m) u.hostname = m[1] + ".m.wikipedia.org"; // mobile host allows framing
+      return u.href;
+    } catch (e) {
+      return raw;
+    }
+  }
+
   function showDestination(code) {
     var external = code.type === "external";
-    var url = external ? code.target : "/q/" + code.slug; // internal → let CF rewrite serve the info page
+    var url = external ? framableUrl(code.target) : "/q/" + code.slug; // internal → let CF rewrite serve the info page
 
     els.label.textContent = code.label || code.slug;
 
     if (external) {
       els.open.href = code.target;
       els.open.classList.remove("hidden");
+      els.blockedOpen.href = code.target;
     } else {
       els.open.classList.add("hidden");
     }
 
+    // If the page won't load/embed within a few seconds (X-Frame-Options, CSP,
+    // network), fall back to a clear "open in browser" prompt instead of a
+    // blank/black frame. A successful load clears the timer.
+    els.dest.classList.remove("blocked");
+    if (blockTimer) clearTimeout(blockTimer);
+    blockTimer = setTimeout(function () {
+      els.dest.classList.add("blocked");
+    }, 4000);
+    els.frame.onload = function () {
+      // Reaching onload for a same-origin or framable page means it rendered.
+      if (els.frame.src !== "about:blank") {
+        clearTimeout(blockTimer);
+        blockTimer = null;
+        els.dest.classList.remove("blocked");
+      }
+    };
+
     els.frame.src = url;
     els.dest.classList.remove("hidden");
+    document.body.classList.add("scanning"); // shrink camera to a thumbnail
     setStatus("Visar: " + (code.label || code.slug));
   }
 

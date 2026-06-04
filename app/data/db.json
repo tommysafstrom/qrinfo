@@ -7,7 +7,7 @@
       "type": "internal",
       "target": "p-seed-oak",
       "enabled": true,
-      "scanCount": 1,
+      "scanCount": 2,
       "createdAt": "2026-05-29",
       "updatedAt": "2026-05-29"
     },
@@ -29,7 +29,7 @@
       "type": "external",
       "target": "https://en.wikipedia.org/wiki/Tulip",
       "enabled": true,
-      "scanCount": 4,
+      "scanCount": 5,
       "createdAt": "2026-05-29",
       "updatedAt": "2026-05-29"
     },
