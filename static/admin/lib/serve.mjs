@@ -98,6 +98,18 @@ function safeResolve(pathname) {
   return full;
 }
 
+// HTML and JS drive what the user actually sees (scan.html/scan.js, index.html,
+// info pages). They must reflect the live release immediately after a deploy or
+// rollback, so they're served uncacheable. Static assets (QR images, CSS, the
+// vendored ZXing bundle, the codes registry) are safe to cache at the edge and
+// in the browser. `must-revalidate` keeps any intermediary honest about the TTL.
+const NO_CACHE_EXT = new Set(['.html', '.js']);
+function cacheControlFor(filePath) {
+  return NO_CACHE_EXT.has(extname(filePath))
+    ? 'no-store, must-revalidate'
+    : 'public, max-age=300, must-revalidate';
+}
+
 async function serveFile(res, filePath, status = 200) {
   if (!filePath) return false;
   try {
@@ -106,7 +118,7 @@ async function serveFile(res, filePath, status = 200) {
     const data = await readFile(filePath);
     res.writeHead(status, {
       'content-type': MIME[extname(filePath)] ?? 'application/octet-stream',
-      'cache-control': 'public, max-age=60',
+      'cache-control': cacheControlFor(filePath),
       'x-content-type-options': 'nosniff',
       'content-length': data.length,
     });

@@ -177,38 +177,56 @@ function checkRedirectCount(codes) {
 }
 
 export async function build({ ref = null, target = 'local' } = {}) {
-  const { codes } = await loadCodesJson(ref);
-  checkRedirectCount(codes);
-  await checkInternalTargets(codes, ref);
-  const baseUrl = resolveBaseUrl(target);
+  // When building a specific ref (deploy/rollback), extract the WHOLE tagged
+  // static/ tree to a temp dir and build every file from there. This makes the
+  // build hermetic: a release is a faithful snapshot of the tag, independent of
+  // the working tree. (Previously only codes.json was ref-pinned, so rollbacks
+  // silently kept the working-tree scan.html/scan.js/index.html — the rollback
+  // looked like a no-op.) With no ref, build straight from the working tree.
+  let srcRoot = ROOT;
+  let tmpRoot = null;
+  if (ref) {
+    tmpRoot = await mkdtemp(resolve(tmpdir(), 'qrinfo-build-'));
+    await archiveSubtreeToDir(ref, 'static', tmpRoot);
+    srcRoot = tmpRoot;
+  }
 
-  await rm(DIST, { recursive: true, force: true });
-  await mkdir(DIST, { recursive: true });
+  try {
+    const { codes } = await loadCodesJson(srcRoot);
+    checkRedirectCount(codes);
+    await checkInternalTargets(codes, srcRoot);
+    const baseUrl = resolveBaseUrl(target);
 
-  await emitRedirects(codes, DIST);
-  await emitIndex(codes, DIST);
-  await emitNotFound(DIST);
-  await emitInfo(DIST);
-  await emitScanner(codes, DIST);
-  await emitQrs(codes, DIST, baseUrl);
-  const version = await emitVersion(DIST, { ref, target });
+    await rm(DIST, { recursive: true, force: true });
+    await mkdir(DIST, { recursive: true });
 
-  const enabled = codes.filter(c => c.enabled).length;
-  const disabled = codes.length - enabled;
-  const summary = {
-    ref: ref ?? '(working tree)',
-    target,
-    baseUrl,
-    enabled,
-    disabled,
-    version,
-    dist: DIST,
-  };
-  console.log(`Built ${enabled} enabled · ${disabled} disabled · target=${target} · base=${baseUrl}`);
-  console.log(`  ref:     ${summary.ref}`);
-  console.log(`  version: ${version.tag ?? version.ref ?? version.version ?? '(unknown)'}`);
-  console.log(`  output:  ${DIST}`);
-  return summary;
+    await emitRedirects(codes, DIST);
+    await emitIndex(codes, DIST, srcRoot);
+    await emitNotFound(DIST, srcRoot);
+    await emitInfo(DIST, srcRoot);
+    await emitScanner(codes, DIST, srcRoot);
+    await emitQrs(codes, DIST, baseUrl);
+    const version = await emitVersion(DIST, { ref, target, srcRoot });
+
+    const enabled = codes.filter(c => c.enabled).length;
+    const disabled = codes.length - enabled;
+    const summary = {
+      ref: ref ?? '(working tree)',
+      target,
+      baseUrl,
+      enabled,
+      disabled,
+      version,
+      dist: DIST,
+    };
+    console.log(`Built ${enabled} enabled · ${disabled} disabled · target=${target} · base=${baseUrl}`);
+    console.log(`  ref:     ${summary.ref}`);
+    console.log(`  version: ${version.tag ?? version.ref ?? version.version ?? '(unknown)'}`);
+    console.log(`  output:  ${DIST}`);
+    return summary;
+  } finally {
+    if (tmpRoot) await rm(tmpRoot, { recursive: true, force: true });
+  }
 }
 
 function parseArgs(argv) {
