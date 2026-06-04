@@ -79,6 +79,20 @@ async function loadRules() {
   }
 }
 
+// slug → { type, target }, from the published registry. Used by scan tracking
+// now that /q/<slug> redirects to scan.html (so type/target can't be read off
+// rule.to anymore).
+async function loadCodeBySlug() {
+  try {
+    const data = JSON.parse(await readFile(resolve(DIST, 'codes.json'), 'utf8'));
+    const map = {};
+    for (const c of data.codes || []) map[c.slug] = { type: c.type, target: c.target };
+    return map;
+  } catch {
+    return {};
+  }
+}
+
 function matchRule(pathname, rules) {
   for (const rule of rules) {
     if (rule.isWildcard) {
@@ -153,7 +167,11 @@ function trackScan(req, pathname, rule) {
   if (!UMAMI.host) return; // env-gated: no-op unless configured
   const slug = pathname.slice('/q/'.length);
   const hit = !rule.isWildcard;
-  const type = rule.to.startsWith('/info/') ? 'internal' : 'external';
+  // /q/<slug> now redirects to scan.html, so resolve the real type/target from
+  // the published registry rather than the redirect target.
+  const code = codeBySlug[slug];
+  const type = code ? code.type : 'external';
+  const target = code ? code.target : rule.to;
   const common = {
     host: UMAMI.host,
     websiteId: UMAMI.websiteId,
@@ -162,12 +180,13 @@ function trackScan(req, pathname, rule) {
     debug: UMAMI.debug,
   };
   // custom event — carries hit/miss + slug/target/type/env/version
-  sendUmami(fetch, { ...common, payload: buildScanEvent({ slug, target: rule.to, type, hit, env: ENV, version: VERSION }) });
+  sendUmami(fetch, { ...common, payload: buildScanEvent({ slug, target, type, hit, env: ENV, version: VERSION }) });
   // bare pageview — so /q/<code> appears in Umami's standard Pages/URLs report
   sendUmami(fetch, { ...common, payload: buildPageview({ slug }) });
 }
 
 let rules = [];
+let codeBySlug = {};
 
 async function handle(req, res) {
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
@@ -221,6 +240,7 @@ async function start() {
     process.exit(1);
   }
   rules = await loadRules();
+  codeBySlug = await loadCodeBySlug();
   if (rules.length === 0) {
     console.warn(`warning: no rules loaded from dist/_redirects — only static files will be served`);
   } else {

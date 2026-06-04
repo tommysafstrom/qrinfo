@@ -65,8 +65,12 @@ async function emitRedirects(codes, distDir) {
     '# Source of truth: codes.json',
     '',
   ];
+  // Route printed-code scans through our own scanner page so a first scan from
+  // the phone's native camera lands on the styled in-page view (wiki/iframe),
+  // identical to scanning a 2nd code while already on scan.html. scan.js reads
+  // ?code=<slug> and opens the destination.
   for (const c of codes.filter(c => c.enabled)) {
-    lines.push(`/q/${c.slug}\t${targetUrl(c)}\t302`);
+    lines.push(`/q/${c.slug}\t/scan.html?code=${c.slug}\t302`);
   }
   lines.push('');
   lines.push('# Fallback for unknown codes');

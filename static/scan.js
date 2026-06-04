@@ -406,12 +406,35 @@
   // Release the camera when the page is hidden/navigated away.
   window.addEventListener("pagehide", stopCamera);
 
-  // Load the published code registry, then start the camera.
+  // Slug from ?code=<slug> — set when a printed code's /q/<slug> redirected here.
+  // We open that destination immediately (same in-page view as a 2nd scan)
+  // instead of starting the camera.
+  function entrySlug() {
+    try {
+      var slug = new URL(window.location.href).searchParams.get("code");
+      return slug && VALID_CODE.test(slug) ? slug : null;
+    } catch (e) { return null; }
+  }
+
+  // Load the published code registry, then either open the entry code or start
+  // the camera.
   fetch("/codes.json", { cache: "no-store" })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       (data.codes || []).forEach(function (c) { codesBySlug[c.slug] = c; });
     })
     .catch(function () { /* registry unavailable — scanner still runs, just no matches */ })
-    .finally(startScanner);
+    .finally(function () {
+      var slug = entrySlug();
+      var code = slug && codesBySlug[slug];
+      if (code && code.enabled !== false) {
+        // Arrived from a printed code: show the page, camera stays off until
+        // the user taps "Skanna ny kod".
+        document.body.classList.add("viewing");
+        recordHistory(code);
+        showDestination(code);
+      } else {
+        startScanner();
+      }
+    });
 })();
