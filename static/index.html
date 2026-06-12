@@ -53,28 +53,6 @@
       height: auto;
       display: block;
     }
-    /* Color picker */
-    .palette {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem;
-      margin: 0 0 2rem;
-    }
-    .palette .label { font-size: 0.875rem; opacity: 0.75; margin-right: 0.25rem; }
-    .swatch {
-      width: 2rem;
-      height: 2rem;
-      border-radius: 50%;
-      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-      cursor: pointer;
-      padding: 0;
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
-    }
-    .swatch:hover { transform: scale(1.08); }
-    .swatch[aria-pressed="true"] {
-      box-shadow: 0 0 0 2px Canvas, 0 0 0 4px CanvasText;
-    }
     .card h2 { margin: 0; font-size: 1.125rem; }
     .card a {
       font-size: 0.875rem;
@@ -98,11 +76,6 @@
 
     <p><a href="/scan.html">📷 Skanna med kameran i webbläsaren →</a></p>
 
-    <div class="palette" role="group" aria-label="Välj bakgrundsfärg för QR-koderna">
-      <span class="label">Bakgrund:</span>
-      <!-- swatches injected by script -->
-    </div>
-
     <div class="grid">
       <!-- {{cards}} -->
     </div>
@@ -114,59 +87,5 @@
     </footer>
   </main>
 
-  <script>
-    // Background color picker: recolors the .badge-bg rect inside every inline
-    // QR badge SVG. The QR matrix and caption stay black, so contrast is kept.
-    (function () {
-      // Only the two standard high-contrast options: black-on-white and the
-      // inverted white-on-black. Colored/tinted backgrounds were dropped because
-      // they didn't scan reliably enough in the in-browser camera.
-      var SWATCHES = [
-        { name: 'Vit',         color: '#ffffff' }, // 21:1 (black fg)
-        { name: 'Svart',       color: '#111111' }, // 19:1 (white fg)
-      ];
-      var palette = document.querySelector('.palette');
-      if (!palette) return;
-
-      // Pick black or white foreground for best contrast against the background,
-      // so the QR + caption stay scannable/legible on dark colors too.
-      function foregroundFor(hex) {
-        var c = hex.replace('#', '');
-        if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
-        var r = parseInt(c.slice(0, 2), 16) / 255;
-        var g = parseInt(c.slice(2, 4), 16) / 255;
-        var b = parseInt(c.slice(4, 6), 16) / 255;
-        function lin(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
-        var L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-        return L > 0.5 ? '#000000' : '#ffffff';
-      }
-
-      function apply(color) {
-        var fg = foregroundFor(color);
-        document.querySelectorAll('.badge .badge-bg').forEach(function (bg) {
-          bg.setAttribute('fill', color);
-        });
-        document.querySelectorAll('.badge .badge-fg').forEach(function (el) {
-          el.setAttribute('fill', fg);
-        });
-        palette.querySelectorAll('.swatch').forEach(function (btn) {
-          btn.setAttribute('aria-pressed', btn.dataset.color === color ? 'true' : 'false');
-        });
-      }
-
-      SWATCHES.forEach(function (s, i) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'swatch';
-        btn.style.background = s.color;
-        btn.dataset.color = s.color;
-        btn.title = s.name;
-        btn.setAttribute('aria-label', s.name);
-        btn.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
-        btn.addEventListener('click', function () { apply(s.color); });
-        palette.appendChild(btn);
-      });
-    })();
-  </script>
 </body>
 </html>
