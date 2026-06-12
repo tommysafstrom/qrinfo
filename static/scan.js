@@ -3,7 +3,9 @@
 // Full-screen camera scanning, started on load and via the "Skanna ny kod"
 // button. On a hit the camera STOPS and the destination is shown (no inline
 // camera). A "Koder" button opens a grid of previously-scanned codes (stored on
-// this device) as Wikipedia-image thumbnails; tapping one re-opens it.
+// this device) as thumbnails — the Wikipedia lead image for external articles,
+// or the first /info/images/<target>_N.jpg for internal taxa; tapping one
+// re-opens it.
 //
 // Wikipedia targets are rendered as a custom image-first page from the
 // Wikipedia REST API. Other external targets are shown in an iframe; internal
@@ -40,11 +42,20 @@
     history: document.getElementById("history"),
     historyGrid: document.getElementById("historyGrid"),
     historyClose: document.getElementById("historyClose"),
+    historyEditBar: document.getElementById("historyEditBar"),
+    historySave: document.getElementById("historySave"),
+    historyCancel: document.getElementById("historyCancel"),
   };
 
   var codesBySlug = {};
   var last = { slug: null, at: 0 };
   var wikiReq = 0; // guards against a slow fetch landing after the view changed
+
+  // Delete mode: true while the user is marking history cards for removal.
+  // markedSlugs holds the slugs tapped for deletion; nothing is persisted until
+  // they press "Spara" (cancel/close discards the marks).
+  var deleting = false;
+  var markedSlugs = {};
 
   var reader = null; // BrowserMultiFormatReader
   var controls = null; // active camera controls (.stop())
@@ -54,6 +65,8 @@
   els.historyClose.addEventListener("click", function () { closeViews(); startScanner(); });
   els.scanNew.addEventListener("click", function () { closeViews(); startScanner(); });
   els.showHistory.addEventListener("click", openHistory);
+  els.historySave.addEventListener("click", commitDelete);
+  els.historyCancel.addEventListener("click", cancelDelete);
 
   function setStatus(msg) { els.status.textContent = msg; }
 
@@ -84,6 +97,7 @@
   // Close any open destination/history view and reveal the camera area.
   function closeViews() {
     wikiReq++; // invalidate any in-flight wiki fetch
+    exitDeleteMode(); // discard any pending marks when leaving the history
     els.dest.classList.add("hidden");
     els.dest.classList.remove("is-wiki");
     els.frame.src = "about:blank";
@@ -204,6 +218,7 @@
     var list = loadHistory();
     els.historyGrid.innerHTML = "";
     if (!list.length) {
+      exitDeleteMode();
       var empty = document.createElement("p");
       empty.className = "empty";
       empty.textContent = "Inga skannade koder än. Tryck “Skanna ny kod”.";
@@ -214,6 +229,7 @@
       var card = document.createElement("button");
       card.type = "button";
       card.className = "card";
+      if (markedSlugs[h.slug]) card.classList.add("marked");
 
       var img = document.createElement("img");
       img.className = "thumb";
@@ -222,16 +238,30 @@
       if (h.thumb) {
         img.src = h.thumb;
       } else {
-        fetchThumb(h, img); // lazily resolve a Wikipedia lead image
+        fetchThumb(h, img); // lazily resolve a thumbnail
       }
 
       var name = document.createElement("span");
       name.className = "name";
       name.textContent = h.label;
 
+      var overlay = document.createElement("span");
+      overlay.className = "del-overlay";
+      overlay.setAttribute("aria-hidden", "true");
+      overlay.textContent = "🗑";
+
       card.appendChild(img);
       card.appendChild(name);
+      card.appendChild(overlay);
       card.addEventListener("click", function () {
+        // In delete mode a tap toggles this card's removal mark instead of
+        // opening it. Nothing is persisted until "Spara".
+        if (deleting) {
+          if (markedSlugs[h.slug]) delete markedSlugs[h.slug];
+          else markedSlugs[h.slug] = true;
+          card.classList.toggle("marked");
+          return;
+        }
         var code = codesBySlug[h.slug] || h;
         closeViews();
         stopCamera();
@@ -241,11 +271,63 @@
       });
       els.historyGrid.appendChild(card);
     });
+
+    // Trash toggle: a card at the end of the grid that enters/exits delete mode.
+    var trash = document.createElement("button");
+    trash.type = "button";
+    trash.className = "card trash";
+    trash.setAttribute("aria-label", deleting ? "Avsluta radering" : "Radera koder");
+    trash.textContent = "🗑";
+    trash.addEventListener("click", function () {
+      if (deleting) cancelDelete(); // re-tap discards marks and leaves the mode
+      else enterDeleteMode();
+    });
+    els.historyGrid.appendChild(trash);
   }
 
-  // Resolve a thumbnail for a history card from the Wikipedia summary image,
-  // then cache it so future opens are instant.
+  // ---- delete mode ----------------------------------------------------------
+
+  function enterDeleteMode() {
+    deleting = true;
+    markedSlugs = {};
+    document.body.classList.add("history-deleting");
+    els.historyEditBar.classList.remove("hidden");
+    renderHistory();
+  }
+
+  // Leave delete mode and discard any pending marks (used by Ångra and on close).
+  function exitDeleteMode() {
+    deleting = false;
+    markedSlugs = {};
+    document.body.classList.remove("history-deleting");
+    els.historyEditBar.classList.add("hidden");
+  }
+
+  function cancelDelete() {
+    exitDeleteMode();
+    renderHistory();
+  }
+
+  // "Spara": forget every marked code, then leave delete mode.
+  function commitDelete() {
+    var list = loadHistory().filter(function (h) { return !markedSlugs[h.slug]; });
+    saveHistory(list);
+    exitDeleteMode();
+    renderHistory();
+  }
+
+  // Resolve a thumbnail for a history card. Internal taxon pages keep their
+  // images under /info/images/<target>_1.jpg, so use the first one directly.
+  // Otherwise fall back to the Wikipedia summary image. Either way we cache the
+  // resolved URL so future opens are instant.
   function fetchThumb(h, img) {
+    if (h.type === "internal" && h.target) {
+      var src = "/info/images/" + h.target + "_1.jpg";
+      img.onload = function () { img.onload = null; cacheThumb(h.slug, src); };
+      img.onerror = function () { img.onerror = null; }; // leave placeholder
+      img.src = src;
+      return;
+    }
     var article = wikiArticle(h.target);
     if (!article) return;
     fetch(summaryApi(article), { headers: { Accept: "application/json" } })

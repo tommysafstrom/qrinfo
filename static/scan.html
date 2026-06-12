@@ -146,6 +146,48 @@
     .history .empty {
       padding: 3rem 1.5rem; text-align: center; color: #aaa; font-size: 0.95rem;
     }
+
+    /* Save/cancel bar, shown in the history bar only while in delete mode. */
+    .history .edit-bar { display: flex; gap: 0.5rem; }
+    .history .edit-bar button {
+      width: auto; height: auto; border-radius: 999px;
+      padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600;
+    }
+    .history .edit-bar button.primary { background: #2563eb; }
+    .history .edit-bar button.ghost { background: rgba(255,255,255,0.15); }
+
+    /* The trash toggle is itself a card at the end of the grid: a big red
+       wastebasket centered on a plain tile. */
+    .history .card.trash {
+      align-items: center; justify-content: center;
+      background: #1d1d1f; aspect-ratio: 1 / 1; padding: 0;
+      color: #ff5252; font-size: 2.4rem; line-height: 1;
+    }
+    body.history-deleting .history .card.trash {
+      background: #3a1414; color: #ff8a80;
+      outline: 2px solid #ff5252; outline-offset: -2px;
+    }
+
+    /* In delete mode every (non-trash) card gets a red wastebasket overlay in
+       its center; tapping the card toggles it for removal. */
+    .history .card .del-overlay { display: none; }
+    body.history-deleting .history .card:not(.trash) .del-overlay {
+      display: grid; place-items: center;
+      position: absolute; inset: 0; z-index: 2;
+      background: rgba(0,0,0,0.45); color: #ff5252; font-size: 2rem;
+    }
+    body.history-deleting .history .card:not(.trash) {
+      position: relative;
+    }
+    body.history-deleting .history .card.marked {
+      outline: 2px solid #ff5252; outline-offset: -2px;
+    }
+    body.history-deleting .history .card.marked .del-overlay {
+      background: rgba(180,0,0,0.55); color: #fff;
+    }
+    body.history-deleting .history .card.marked .thumb,
+    body.history-deleting .history .card.marked .name { opacity: 0.4; }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -186,6 +228,10 @@
   <section id="history" class="history">
     <div class="bar">
       <span class="label">Skannade koder</span>
+      <div id="historyEditBar" class="edit-bar hidden">
+        <button id="historyCancel" type="button" class="ghost">Ångra</button>
+        <button id="historySave" type="button" class="primary">Spara</button>
+      </div>
       <button id="historyClose" type="button" aria-label="Stäng">✕</button>
     </div>
     <div id="historyGrid" class="grid"></div>

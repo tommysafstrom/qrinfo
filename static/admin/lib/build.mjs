@@ -2,8 +2,8 @@ import { readFile, writeFile, mkdir, rm, cp, stat, mkdtemp } from 'node:fs/promi
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import QRCode from 'qrcode';
 
+import { badgeSvg, badgePng } from './badge.mjs';
 import { codesJsonSchema } from './schema.mjs';
 import { resolveBaseUrl } from './baseUrl.mjs';
 import { shortSha, archiveSubtreeToDir } from './git.mjs';
@@ -11,8 +11,6 @@ import { shortSha, archiveSubtreeToDir } from './git.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');          // static/
 const DIST = resolve(ROOT, 'dist');
-
-const QR_OPTIONS = { errorCorrectionLevel: 'H', margin: 2, scale: 8 };
 
 // Cloudflare Pages' published limit is ~2100; leave headroom.
 const MAX_REDIRECT_RULES = 2000;
@@ -50,10 +48,13 @@ function summaryFor(code) {
   }
 }
 
-function renderCard(code) {
+async function renderCard(code, baseUrl) {
   const altLabel = escapeHtml(code.label);
+  // Inline the badge SVG so the live color picker can recolor its background.
+  // The .badge-bg rect inside is the recolor target (see badge.mjs).
+  const svg = await badgeSvg(`${baseUrl}/q/${code.slug}`);
   return `      <article class="card">
-        <img src="/qr/${code.slug}.png" alt="QR-kod som länkar till ${altLabel}">
+        <div class="badge" role="img" aria-label="QR-kod som länkar till ${altLabel}">${svg}</div>
         <h2>${altLabel}</h2>
         <a href="/q/${code.slug}">/q/${code.slug} → ${escapeHtml(summaryFor(code))}</a>
       </article>`;
@@ -79,12 +80,12 @@ async function emitRedirects(codes, distDir) {
   await writeFile(resolve(distDir, '_redirects'), lines.join('\n'));
 }
 
-async function emitIndex(codes, distDir, srcRoot) {
+async function emitIndex(codes, distDir, srcRoot, baseUrl) {
   const template = await readFile(resolve(srcRoot, 'index.html'), 'utf8');
   const enabled = codes.filter(c => c.enabled);
   const cards = enabled.length === 0
     ? '      <p class="empty">Inga koder publicerade ännu.</p>'
-    : enabled.map(renderCard).join('\n\n');
+    : (await Promise.all(enabled.map(c => renderCard(c, baseUrl)))).join('\n\n');
   if (!template.includes('<!-- {{cards}} -->')) {
     throw new Error('index.html is missing the <!-- {{cards}} --> placeholder');
   }
@@ -128,9 +129,10 @@ async function emitQrs(codes, distDir, baseUrl) {
   await mkdir(qrDir, { recursive: true });
   for (const c of codes.filter(c => c.enabled)) {
     const url = `${baseUrl}/q/${c.slug}`;
-    await QRCode.toFile(resolve(qrDir, `${c.slug}.png`), url, QR_OPTIONS);
-    const svg = await QRCode.toString(url, { ...QR_OPTIONS, type: 'svg' });
+    const svg = await badgeSvg(url);
     await writeFile(resolve(qrDir, `${c.slug}.svg`), svg);
+    const png = await badgePng(url, { size: 512 });
+    await writeFile(resolve(qrDir, `${c.slug}.png`), png);
   }
 }
 
@@ -205,7 +207,7 @@ export async function build({ ref = null, target = 'local' } = {}) {
     await mkdir(DIST, { recursive: true });
 
     await emitRedirects(codes, DIST);
-    await emitIndex(codes, DIST, srcRoot);
+    await emitIndex(codes, DIST, srcRoot, baseUrl);
     await emitNotFound(DIST, srcRoot);
     await emitInfo(DIST, srcRoot);
     await emitScanner(codes, DIST, srcRoot);
