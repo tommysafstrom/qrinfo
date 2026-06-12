@@ -395,9 +395,12 @@
     }
 
     // Non-Wikipedia: internal info page or a plain external site in an iframe.
+    // Internal codes are served as a static page at /info/<target>.html (the
+    // build validates that file exists). Loading /q/<slug> here would redirect
+    // back to scan.html and loop.
     wikiReq++; // not a wiki view
     els.dest.classList.remove("is-wiki");
-    els.frame.src = external ? code.target : "/q/" + code.slug;
+    els.frame.src = external ? code.target : "/info/" + code.target + ".html";
     els.dest.classList.remove("hidden");
     document.body.classList.add("viewing");
     setStatus("Visar: " + (code.label || code.slug));

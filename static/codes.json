@@ -36,6 +36,33 @@
       "enabled": true,
       "createdAt": "2026-06-02T17:39:41.570Z",
       "updatedAt": "2026-06-02T17:39:41.570Z"
+    },
+    {
+      "slug": "taxon2624",
+      "label": "Zea mays (Fodermajs Group) 'Arcade'",
+      "type": "internal",
+      "target": "taxon2624",
+      "enabled": true,
+      "createdAt": "2026-06-12T15:05:15.000Z",
+      "updatedAt": "2026-06-12T15:05:15.000Z"
+    },
+    {
+      "slug": "taxon11",
+      "label": "Acer platanoides 'Columnare'",
+      "type": "internal",
+      "target": "taxon11",
+      "enabled": true,
+      "createdAt": "2026-06-12T15:05:15.000Z",
+      "updatedAt": "2026-06-12T15:05:15.000Z"
+    },
+    {
+      "slug": "taxon19",
+      "label": "Acer tegmentosum",
+      "type": "internal",
+      "target": "taxon19",
+      "enabled": true,
+      "createdAt": "2026-06-12T15:05:19.000Z",
+      "updatedAt": "2026-06-12T15:05:19.000Z"
     }
   ]
 }
