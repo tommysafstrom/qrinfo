@@ -57,9 +57,21 @@
   var deleting = false;
   var markedSlugs = {};
 
-  var reader = null; // BrowserMultiFormatReader
+  var reader = null; // BrowserMultiFormatReader (ZXing fallback)
   var controls = null; // active camera controls (.stop())
   var scanning = false;
+
+  // Native BarcodeDetector path. When available (Android Chrome, etc.) this taps
+  // the platform's hardware-backed detector — the same engine the phone's camera
+  // app uses — which reads low-contrast / colored codes far better than ZXing's
+  // pure-JS luminance binarizer. iOS Safari lacks it, so we fall back to ZXing.
+  var nativeStream = null; // MediaStream held open by the native path
+  var nativeRAF = 0; // requestAnimationFrame handle for the native scan loop
+
+  // ZXing's TRY_HARDER decode hint (DecodeHintType.TRY_HARDER === 3 in
+  // @zxing/library). Passed to the reader so the JS fallback spends more effort
+  // per frame (extra thresholds/rotations) on marginal colored codes.
+  var ZXING_TRY_HARDER = 3;
 
   els.close.addEventListener("click", function () { closeViews(); startScanner(); });
   els.historyClose.addEventListener("click", function () { closeViews(); startScanner(); });
@@ -91,7 +103,18 @@
 
   function stopCamera() {
     if (controls) { try { controls.stop(); } catch (e) {} controls = null; }
+    if (nativeRAF) { cancelAnimationFrame(nativeRAF); nativeRAF = 0; }
+    if (nativeStream) {
+      try { nativeStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+      nativeStream = null;
+      try { els.video.srcObject = null; } catch (e) {}
+    }
     scanning = false;
+  }
+
+  // True when the platform exposes a usable BarcodeDetector for QR codes.
+  function hasNativeDetector() {
+    return typeof window.BarcodeDetector === "function";
   }
 
   // Close any open destination/history view and reveal the camera area.
@@ -106,6 +129,31 @@
     last = { slug: null, at: 0 };
   }
 
+  // Map a getUserMedia / scanner startup error to a user-facing overlay.
+  function reportCameraError(err) {
+    scanning = false;
+    var name = err && err.name;
+    if (name === "NotAllowedError") {
+      showOverlay("Kameraåtkomst nekades. Tillåt kameran och ladda om sidan.");
+    } else if (name === "NotFoundError") {
+      showOverlay("Ingen kamera hittades på den här enheten.");
+    } else {
+      showOverlay("Kunde inte starta kameran.");
+    }
+    setStatus("Kameran kunde inte startas.");
+  }
+
+  // Feed a decoded QR string through the slug pipeline, reporting non-qrinfo
+  // codes. Shared by the native and ZXing scan paths.
+  function onDecoded(text) {
+    var slug = extractSlug(text);
+    if (slug) {
+      handleSlug(slug);
+    } else {
+      setStatus("Den här koden hör inte till QR Info.");
+    }
+  }
+
   function startScanner() {
     if (scanning) return;
     if (!window.isSecureContext) {
@@ -113,42 +161,86 @@
       setStatus("Kameran är blockerad.");
       return;
     }
+    els.overlay.classList.add("hidden");
+    setStatus("Rikta kameran mot en QR-kod…");
+
+    // Prefer the platform detector; only fall back to ZXing when it's missing.
+    if (hasNativeDetector()) {
+      startNativeScanner();
+    } else {
+      startZxingScanner();
+    }
+  }
+
+  // Native BarcodeDetector loop: open the rear camera ourselves, then sample
+  // video frames on each animation frame and ask the platform to detect QR
+  // codes. Reads colored / low-contrast codes that defeat the JS fallback.
+  function startNativeScanner() {
+    var detector;
+    try {
+      detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+    } catch (e) {
+      startZxingScanner(); // formats unsupported — let ZXing try
+      return;
+    }
+    scanning = true;
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then(function (stream) {
+        if (!scanning) { // stopped while permission was pending
+          stream.getTracks().forEach(function (t) { t.stop(); });
+          return;
+        }
+        nativeStream = stream;
+        els.video.srcObject = stream;
+        els.video.setAttribute("playsinline", "true");
+        return els.video.play().catch(function () {}); // autoplay may resolve late
+      })
+      .then(function () {
+        if (scanning && nativeStream) scanNativeFrame(detector);
+      })
+      .catch(reportCameraError);
+  }
+
+  function scanNativeFrame(detector) {
+    if (!scanning || !nativeStream) return;
+    detector
+      .detect(els.video)
+      .then(function (codes) {
+        if (codes && codes.length) onDecoded(codes[0].rawValue);
+      })
+      .catch(function () { /* transient frame error — keep going */ })
+      .finally(function () {
+        if (scanning && nativeStream) {
+          nativeRAF = requestAnimationFrame(function () { scanNativeFrame(detector); });
+        }
+      });
+  }
+
+  // ZXing fallback (iOS Safari and any browser without BarcodeDetector). The
+  // TRY_HARDER hint trades CPU for a better shot at marginal colored codes.
+  function startZxingScanner() {
     if (!window.ZXingBrowser || !window.ZXingBrowser.BrowserMultiFormatReader) {
       showOverlay("Kunde inte ladda skannern.");
       return;
     }
-    els.overlay.classList.add("hidden");
-    if (!reader) reader = new window.ZXingBrowser.BrowserMultiFormatReader();
+    if (!reader) {
+      var hints = new Map();
+      hints.set(ZXING_TRY_HARDER, true);
+      reader = new window.ZXingBrowser.BrowserMultiFormatReader(hints);
+    }
     scanning = true;
-    setStatus("Rikta kameran mot en QR-kod…");
 
     reader
       .decodeFromConstraints(
         { video: { facingMode: "environment" } },
         els.video,
         function (result) {
-          if (!result) return;
-          var slug = extractSlug(result.getText());
-          if (slug) {
-            handleSlug(slug);
-          } else {
-            setStatus("Den här koden hör inte till QR Info.");
-          }
+          if (result) onDecoded(result.getText());
         }
       )
       .then(function (c) { controls = c; })
-      .catch(function (err) {
-        scanning = false;
-        var name = err && err.name;
-        if (name === "NotAllowedError") {
-          showOverlay("Kameraåtkomst nekades. Tillåt kameran och ladda om sidan.");
-        } else if (name === "NotFoundError") {
-          showOverlay("Ingen kamera hittades på den här enheten.");
-        } else {
-          showOverlay("Kunde inte starta kameran.");
-        }
-        setStatus("Kameran kunde inte startas.");
-      });
+      .catch(reportCameraError);
   }
 
   function handleSlug(slug) {

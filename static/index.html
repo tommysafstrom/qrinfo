@@ -118,19 +118,25 @@
     // Background color picker: recolors the .badge-bg rect inside every inline
     // QR badge SVG. The QR matrix and caption stay black, so contrast is kept.
     (function () {
+      // Each color is chosen so the auto-picked black/white foreground gives a
+      // QR contrast ratio of ~12:1 or better (scanners want >=3:1; phone screens
+      // with glare need plenty of headroom). Light tints keep a pure-black
+      // foreground (best contrast); the darks are deep enough that a white
+      // foreground stays strong. Avoid mid-tones near luminance 0.5 — they sit at
+      // the flip point and read poorly (the old "Sand" was only 2:1).
       var SWATCHES = [
-        { name: 'Vit',         color: '#ffffff' },
-        { name: 'Ljusgrå',     color: '#eef0f2' },
-        { name: 'Ljusgul',     color: '#fff6cc' },
-        { name: 'Ljusblå',     color: '#dcecff' },
-        { name: 'Ljusgrön',    color: '#ddf3df' },
-        { name: 'Rosa',        color: '#ffe1ec' },
-        { name: 'Sand',        color: '#c9b18a' },
-        { name: 'Mossgrön',    color: '#4f6b3a' },
-        { name: 'Havsblå',     color: '#1f4e6b' },
-        { name: 'Vinröd',      color: '#6b2436' },
-        { name: 'Mörkgrå',     color: '#3a3f44' },
-        { name: 'Svart',       color: '#111111' },
+        { name: 'Vit',         color: '#ffffff' }, // 21:1
+        { name: 'Ljusgrå',     color: '#eaedf0' }, // 18:1
+        { name: 'Ljusgul',     color: '#fff3b0' }, // 19:1
+        { name: 'Ljusblå',     color: '#cfe4ff' }, // 16:1
+        { name: 'Ljusgrön',    color: '#d2f0d6' }, // 17:1
+        { name: 'Rosa',        color: '#ffd6e6' }, // 16:1
+        { name: 'Persika',     color: '#ffe0c2' }, // 17:1
+        { name: 'Lavendel',    color: '#e6dcff' }, // 16:1
+        { name: 'Mossgrön',    color: '#1f3d12' }, // 12:1 (white fg)
+        { name: 'Havsblå',     color: '#0c2f4a' }, // 14:1 (white fg)
+        { name: 'Vinröd',      color: '#4a1020' }, // 15:1 (white fg)
+        { name: 'Svart',       color: '#111111' }, // 19:1 (white fg)
       ];
       var palette = document.querySelector('.palette');
       if (!palette) return;
