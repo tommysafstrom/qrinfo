@@ -23,7 +23,14 @@ Usage:
     python3 scrape_taxa.py 2624 11 19
     python3 scrape_taxa.py https://slukunskapsparken.gardenexplorer.org/taxon-19.aspx
     python3 scrape_taxa.py ids.txt                # one id/url per line
+    python3 scrape_taxa.py --crawl                # every taxon that HAS images
+    python3 scrape_taxa.py --crawl --limit 20     # first 20 (testing)
     python3 scrape_taxa.py --static /path/to/static 19   # override static/ dir
+
+--crawl enumerates all taxa from the A–Z browse pages (taxalist-<L>.aspx),
+fetches each detail page, and publishes ONLY those that have at least one image
+(taxa with no image are skipped). --delay <sec> throttles between fetches
+(default 0.3s). Explicit ids/files are always published, image or not.
 
 After running, build/deploy the site as usual (npm run build).
 No third-party Python dependencies.
@@ -34,6 +41,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -244,34 +252,108 @@ def upsert_code(codes_path, slug, label, target):
         f.write("\n")
 
 
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
+def crawl_ids():
+    """Enumerate every taxon id from the A–Z browse pages (deduped, in order)."""
+    seen = set()
+    ids = []
+    for letter in LETTERS:
+        url = f"{BASE}taxalist-{letter}.aspx"
+        try:
+            page = fetch(url)
+        except Exception as e:
+            print(f"    ! crawl {url} failed: {e}")
+            continue
+        found = re.findall(r"taxon-(\d+)\.aspx", page)
+        new = 0
+        for tid in found:
+            if tid not in seen:
+                seen.add(tid)
+                ids.append(tid)
+                new += 1
+        print(f"  {letter}: {new} taxa")
+    print(f"  total: {len(ids)} unique taxa to check")
+    return ids
+
+
+def process_taxon(tid, info_dir, img_dir, codes_path, skip_no_image=False):
+    """Fetch, parse and publish one taxon. Returns True if published."""
+    slug = f"taxon{tid}"
+    if not SLUG_REGEX.match(slug):
+        print(f"[{tid}] slug '{slug}' invalid for qrinfo — skipping")
+        return False
+    url = f"{BASE}taxon-{tid}.aspx"
+    try:
+        page = fetch(url)
+    except Exception as e:
+        print(f"[{tid}] ! fetch failed: {e}")
+        return False
+    taxon = parse_taxon(page, tid)
+
+    if skip_no_image and not taxon["images"]:
+        print(f"[{tid}] {taxon['name_text']}  (no image — skipped)")
+        return False
+
+    print(f"[{tid}] {taxon['name_text']}  ({len(taxon['images'])} image(s))")
+
+    img_rel = []
+    for idx, iu in enumerate(taxon["images"], 1):
+        ext = os.path.splitext(urllib.parse.urlparse(iu).path)[1] or ".jpg"
+        try:
+            fname = download(iu, img_dir, f"{slug}_{idx}{ext}")
+            img_rel.append(f"images/{fname}")
+        except Exception as e:
+            print(f"    ! image {iu} failed: {e}")
+
+    local_media = {}
+    for mu in re.findall(
+        r"""src=['"]([^'"]+\.(?:mp3|mp4|ogg|wav|webm|m4a))['"]""",
+        taxon["details_html"], re.I,
+    ):
+        absu = absolutize(mu)
+        name = os.path.basename(urllib.parse.urlparse(absu).path)
+        try:
+            fname = download(absu, img_dir, f"{slug}_{name}")
+            local_media[absu] = f"images/{fname}"
+        except Exception as e:
+            print(f"    ! media {absu} failed: {e}")
+    taxon["details_html"] = rewrite_details(taxon["details_html"], local_media)
+
+    page_html = build_page(taxon, img_rel)
+    with open(os.path.join(info_dir, f"{slug}.html"), "w") as f:
+        f.write(page_html)
+
+    upsert_code(codes_path, slug, taxon["name_text"], slug)
+    print(f"    -> info/{slug}.html  ·  code '{slug}' upserted")
+    return True
+
+
 def main(argv):
     static_dir = DEFAULT_STATIC
+    crawl = False
+    limit = None
+    delay = 0.3
     args = []
     i = 0
     while i < len(argv):
-        if argv[i] in ("--static", "-s"):
+        a = argv[i]
+        if a in ("--static", "-s"):
             static_dir = argv[i + 1]
             i += 2
-        else:
-            args.append(argv[i])
+        elif a == "--crawl":
+            crawl = True
             i += 1
-
-    ids = []
-    for a in args:
-        if os.path.isfile(a):
-            with open(a) as f:
-                for line in f:
-                    nid = normalize_id(line)
-                    if nid:
-                        ids.append(nid)
+        elif a == "--limit":
+            limit = int(argv[i + 1])
+            i += 2
+        elif a == "--delay":
+            delay = float(argv[i + 1])
+            i += 2
         else:
-            nid = normalize_id(a)
-            if nid:
-                ids.append(nid)
-
-    if not ids:
-        print("No taxon ids given. Example: python3 scrape_taxa.py 2624 11 19")
-        return 1
+            args.append(a)
+            i += 1
 
     info_dir = os.path.join(static_dir, "info")
     img_dir = os.path.join(info_dir, "images")
@@ -281,52 +363,45 @@ def main(argv):
         return 1
     os.makedirs(img_dir, exist_ok=True)
 
-    for tid in ids:
-        slug = f"taxon{tid}"
-        if not SLUG_REGEX.match(slug):
-            print(f"[{tid}] slug '{slug}' invalid for qrinfo — skipping")
-            continue
-        url = f"{BASE}taxon-{tid}.aspx"
-        print(f"[{tid}] fetching {url}")
-        try:
-            page = fetch(url)
-        except Exception as e:
-            print(f"    ! fetch failed: {e}")
-            continue
-        taxon = parse_taxon(page, tid)
-        print(f"    {taxon['name_text']}  ({len(taxon['images'])} image(s))")
+    if crawl:
+        print("Crawling A–Z browse pages for taxon ids…")
+        ids = crawl_ids()
+        skip_no_image = True   # --crawl publishes only taxa that have images
+    else:
+        ids = []
+        for a in args:
+            if os.path.isfile(a):
+                with open(a) as f:
+                    for line in f:
+                        nid = normalize_id(line)
+                        if nid:
+                            ids.append(nid)
+            else:
+                nid = normalize_id(a)
+                if nid:
+                    ids.append(nid)
+        skip_no_image = False  # explicit ids are published regardless
 
-        img_rel = []
-        for idx, iu in enumerate(taxon["images"], 1):
-            ext = os.path.splitext(urllib.parse.urlparse(iu).path)[1] or ".jpg"
-            try:
-                fname = download(iu, img_dir, f"{slug}_{idx}{ext}")
-                img_rel.append(f"images/{fname}")
-            except Exception as e:
-                print(f"    ! image {iu} failed: {e}")
+    if not ids:
+        print("Nothing to do. Pass taxon ids, a file, or --crawl.")
+        return 1
 
-        local_media = {}
-        for mu in re.findall(
-            r"""src=['"]([^'"]+\.(?:mp3|mp4|ogg|wav|webm|m4a))['"]""",
-            taxon["details_html"], re.I,
-        ):
-            absu = absolutize(mu)
-            name = os.path.basename(urllib.parse.urlparse(absu).path)
-            try:
-                fname = download(absu, img_dir, f"{slug}_{name}")
-                local_media[absu] = f"images/{fname}"
-            except Exception as e:
-                print(f"    ! media {absu} failed: {e}")
-        taxon["details_html"] = rewrite_details(taxon["details_html"], local_media)
+    if limit is not None:
+        ids = ids[:limit]
 
-        page_html = build_page(taxon, img_rel)
-        with open(os.path.join(info_dir, f"{slug}.html"), "w") as f:
-            f.write(page_html)
+    published = 0
+    skipped = 0
+    for n, tid in enumerate(ids):
+        if process_taxon(tid, info_dir, img_dir, codes_path, skip_no_image):
+            published += 1
+        else:
+            skipped += 1
+        # be polite between detail-page fetches when doing many
+        if delay and n + 1 < len(ids):
+            time.sleep(delay)
 
-        upsert_code(codes_path, slug, taxon["name_text"], slug)
-        print(f"    -> info/{slug}.html  ·  code '{slug}' upserted")
-
-    print("\nDone. Now build & deploy the site (e.g. `npm run build`).")
+    print(f"\nDone. {published} published · {skipped} skipped.")
+    print("Now build & deploy the site (e.g. `npm run build`).")
     return 0
 
 

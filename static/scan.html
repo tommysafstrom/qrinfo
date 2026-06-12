@@ -48,6 +48,10 @@
     }
     .topbar button.primary { background: #2563eb; }
     .topbar .spacer { flex: 1; }
+    /* While the history ("Koder") view is open it has its own bar (with the
+       Skanna-ny/Spara/Ångra/close actions), so hide the persistent top bar to
+       avoid the two overlapping. */
+    body.history-open .topbar { display: none; }
 
     /* Status line, floating under the top bar over the idle camera. */
     #status {
@@ -187,6 +191,11 @@
     }
     body.history-deleting .history .card.marked .thumb,
     body.history-deleting .history .card.marked .name { opacity: 0.4; }
+
+    /* Classic wastebasket icon (inline SVG); inherits the card's color. */
+    .trash-icon { display: block; fill: currentColor; }
+    .history .card.trash .trash-icon { width: 2.4rem; height: 2.4rem; }
+    .history .card .del-overlay .trash-icon { width: 2rem; height: 2rem; }
 
     .hidden { display: none !important; }
   </style>

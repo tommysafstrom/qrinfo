@@ -248,7 +248,7 @@
       var overlay = document.createElement("span");
       overlay.className = "del-overlay";
       overlay.setAttribute("aria-hidden", "true");
-      overlay.textContent = "🗑";
+      overlay.appendChild(trashIcon());
 
       card.appendChild(img);
       card.appendChild(name);
@@ -277,7 +277,7 @@
     trash.type = "button";
     trash.className = "card trash";
     trash.setAttribute("aria-label", deleting ? "Avsluta radering" : "Radera koder");
-    trash.textContent = "🗑";
+    trash.appendChild(trashIcon());
     trash.addEventListener("click", function () {
       if (deleting) cancelDelete(); // re-tap discards marks and leaves the mode
       else enterDeleteMode();
@@ -286,6 +286,27 @@
   }
 
   // ---- delete mode ----------------------------------------------------------
+
+  // A classic wastebasket icon (lid + handle + ribbed can) as a fresh inline
+  // SVG. Returns a new node each call since the same element can't be reused in
+  // two places. Color comes from the CSS `fill: currentColor`.
+  function trashIcon() {
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "trash-icon");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    var path = document.createElementNS(NS, "path");
+    // Lid (with handle tab) + can body with three ribs.
+    path.setAttribute(
+      "d",
+      "M9 3a1 1 0 0 0-1 1v1H4a1 1 0 0 0 0 2h1v12a2 2 0 0 0 2 2h10a2 2 0 0 0 " +
+      "2-2V7h1a1 1 0 1 0 0-2h-4V4a1 1 0 0 0-1-1H9zm1 2h4v1h-4V5zM9 9a1 1 0 0 " +
+      "1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1zm3 0a1 1 0 0 1 1 1v7a1 1 0 1 1-2 " +
+      "0v-7a1 1 0 0 1 1-1zm3 0a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1z"
+    );
+    svg.appendChild(path);
+    return svg;
+  }
 
   function enterDeleteMode() {
     deleting = true;

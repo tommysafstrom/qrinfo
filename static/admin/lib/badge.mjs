@@ -45,9 +45,12 @@ function modulesToPath(data, size) {
 /**
  * Build the badge SVG string for a URL.
  * @param {string} url - the URL the QR encodes.
+ * @param {object} [opts]
+ * @param {string} [opts.bg='#ffffff'] - background fill.
+ * @param {string} [opts.fg='#000000'] - QR + caption fill (must contrast with bg).
  * @returns {Promise<string>} SVG markup.
  */
-export async function badgeSvg(url) {
+export async function badgeSvg(url, { bg = '#ffffff', fg = '#000000' } = {}) {
   const qr = QRCode.create(url, { errorCorrectionLevel: 'H' });
   const size = qr.modules.size;
   const data = qr.modules.data;
@@ -63,14 +66,15 @@ export async function badgeSvg(url) {
   const captionX = width / 2;
   const fontSize = CAPTION_HEIGHT * 0.78;
 
-  // The background rect carries a class so the live page can recolor it; the
-  // default fill stays white so standalone files (downloads/print) look right.
+  // The background rect and the foreground (QR + caption) carry classes so the
+  // live page can recolor both — dark backgrounds need a white foreground to
+  // stay scannable. Default fills stay black-on-white for standalone files.
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">` +
-    `<rect class="badge-bg" width="${width}" height="${height}" fill="#ffffff"/>` +
-    `<path fill="#000000" d="${qrPath}"/>` +
-    `<text x="${captionX}" y="${captionY}" text-anchor="middle" ` +
+    `<rect class="badge-bg" width="${width}" height="${height}" fill="${bg}"/>` +
+    `<path class="badge-fg" fill="${fg}" d="${qrPath}"/>` +
+    `<text class="badge-fg" x="${captionX}" y="${captionY}" text-anchor="middle" ` +
     `font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" ` +
-    `font-size="${fontSize}" font-weight="600" fill="#000000" ` +
+    `font-size="${fontSize}" font-weight="600" fill="${fg}" ` +
     `shape-rendering="auto">${escapeXml(CAPTION)}</text>` +
     `</svg>`;
 }
@@ -82,8 +86,8 @@ export async function badgeSvg(url) {
  * @param {number} [opts.size=512] - target PNG width in px (height scales with the badge aspect).
  * @returns {Promise<Buffer>}
  */
-export async function badgePng(url, { size = 512 } = {}) {
-  const svg = await badgeSvg(url);
+export async function badgePng(url, { size = 512, bg, fg } = {}) {
+  const svg = await badgeSvg(url, { bg, fg });
   return sharp(Buffer.from(svg), { density: 384 })
     .resize({ width: size })
     .png()

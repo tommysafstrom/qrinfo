@@ -119,19 +119,42 @@
     // QR badge SVG. The QR matrix and caption stay black, so contrast is kept.
     (function () {
       var SWATCHES = [
-        { name: 'Vit',      color: '#ffffff' },
-        { name: 'Ljusgrå',  color: '#eef0f2' },
-        { name: 'Ljusgul',  color: '#fff6cc' },
-        { name: 'Ljusblå',  color: '#dcecff' },
-        { name: 'Ljusgrön', color: '#ddf3df' },
-        { name: 'Rosa',     color: '#ffe1ec' },
+        { name: 'Vit',         color: '#ffffff' },
+        { name: 'Ljusgrå',     color: '#eef0f2' },
+        { name: 'Ljusgul',     color: '#fff6cc' },
+        { name: 'Ljusblå',     color: '#dcecff' },
+        { name: 'Ljusgrön',    color: '#ddf3df' },
+        { name: 'Rosa',        color: '#ffe1ec' },
+        { name: 'Sand',        color: '#c9b18a' },
+        { name: 'Mossgrön',    color: '#4f6b3a' },
+        { name: 'Havsblå',     color: '#1f4e6b' },
+        { name: 'Vinröd',      color: '#6b2436' },
+        { name: 'Mörkgrå',     color: '#3a3f44' },
+        { name: 'Svart',       color: '#111111' },
       ];
       var palette = document.querySelector('.palette');
       if (!palette) return;
 
+      // Pick black or white foreground for best contrast against the background,
+      // so the QR + caption stay scannable/legible on dark colors too.
+      function foregroundFor(hex) {
+        var c = hex.replace('#', '');
+        if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+        var r = parseInt(c.slice(0, 2), 16) / 255;
+        var g = parseInt(c.slice(2, 4), 16) / 255;
+        var b = parseInt(c.slice(4, 6), 16) / 255;
+        function lin(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+        var L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+        return L > 0.5 ? '#000000' : '#ffffff';
+      }
+
       function apply(color) {
+        var fg = foregroundFor(color);
         document.querySelectorAll('.badge .badge-bg').forEach(function (bg) {
           bg.setAttribute('fill', color);
+        });
+        document.querySelectorAll('.badge .badge-fg').forEach(function (el) {
+          el.setAttribute('fill', fg);
         });
         palette.querySelectorAll('.swatch').forEach(function (btn) {
           btn.setAttribute('aria-pressed', btn.dataset.color === color ? 'true' : 'false');
