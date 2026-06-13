@@ -313,5 +313,5 @@ git tag -d release/<n>   # any local-only tags
 | `static/admin/server.mjs` | The local Node server |
 | `static/admin/lib/*` | Logic — never touched by production traffic |
 | `static/admin/public/*` | UI shell — served from the local server |
-| `static/info/<slug>.html` | Hand-authored internal info pages |
+| `static/hosted/<customerId>/<slug>.html` | Hand-authored internal info pages |
 | Git tags `release/N` | Immutable release points |

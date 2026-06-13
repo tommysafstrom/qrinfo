@@ -34,8 +34,13 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
+// Where an internal code's hosted page lives: /hosted/<customerId>/<target>.html.
+function hostedPath(code) {
+  return `/hosted/${code.customerId}/${code.target}.html`;
+}
+
 function targetUrl(code) {
-  return code.type === 'external' ? code.target : `/info/${code.target}.html`;
+  return code.type === 'external' ? code.target : hostedPath(code);
 }
 
 // The public path a printed QR encodes: /q/<customerId>/<qid>.
@@ -103,10 +108,12 @@ async function emitNotFound(distDir, srcRoot) {
   await cp(resolve(srcRoot, 'not-found.html'), resolve(distDir, 'not-found.html'));
 }
 
-async function emitInfo(distDir, srcRoot) {
-  const infoSrc = resolve(srcRoot, 'info');
-  if (await pathExists(infoSrc)) {
-    await cp(infoSrc, resolve(distDir, 'info'), { recursive: true });
+// Copy the hand-authored hosted pages (and their images) through to
+// dist/hosted/<customerId>/. Internal codes are served from there.
+async function emitHosted(distDir, srcRoot) {
+  const hostedSrc = resolve(srcRoot, 'hosted');
+  if (await pathExists(hostedSrc)) {
+    await cp(hostedSrc, resolve(distDir, 'hosted'), { recursive: true });
   }
 }
 
@@ -177,10 +184,10 @@ async function emitVersion(distDir, { ref, target, srcRoot }) {
 async function checkInternalTargets(codes, srcRoot) {
   const internal = codes.filter(c => c.enabled && c.type === 'internal');
   for (const c of internal) {
-    const p = resolve(srcRoot, 'info', `${c.target}.html`);
+    const p = resolve(srcRoot, 'hosted', String(c.customerId), `${c.target}.html`);
     if (!(await pathExists(p))) {
       throw new Error(
-        `code "${codeId(c)}" (internal) → info/${c.target}.html does not exist on disk`,
+        `code "${codeId(c)}" (internal) → hosted/${c.customerId}/${c.target}.html does not exist on disk`,
       );
     }
   }
@@ -222,7 +229,7 @@ export async function build({ ref = null, target = 'local' } = {}) {
     await emitRedirects(codes, DIST);
     await emitIndex(codes, DIST, srcRoot, baseUrl);
     await emitNotFound(DIST, srcRoot);
-    await emitInfo(DIST, srcRoot);
+    await emitHosted(DIST, srcRoot);
     await emitScanner(codes, DIST, srcRoot);
     await emitQrs(codes, DIST, baseUrl);
     const version = await emitVersion(DIST, { ref, target, srcRoot });

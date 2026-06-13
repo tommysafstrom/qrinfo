@@ -1,7 +1,7 @@
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-// Internal targets still resolve to info/<target>.html, so they keep the slug shape.
+// Internal targets resolve to hosted/<customerId>/<target>.html, so they keep the slug shape.
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{2,30}$/;
 
 // A code is identified by the (customerId, qid) pair. "<customerId>-<qid>".
@@ -160,7 +160,7 @@ function updateTargetHint() {
   const label = type === 'external' ? 'Target URL' : 'Target page (e.g. "oak")';
   const hint = type === 'external'
     ? 'e.g. https://en.wikipedia.org/wiki/Tulip'
-    : 'name of an info/<slug>.html file you author by hand';
+    : 'name of a hosted/<customerId>/<slug>.html file you author by hand';
   $('#target-label').textContent = label;
   $('#target-hint').textContent = hint;
 }
@@ -177,7 +177,7 @@ function validateForm(values) {
     ok = false;
   }
   if (values.type === 'internal' && values.target && !SLUG_RE.test(values.target)) {
-    showFieldError('target', 'internal target must match info/<name>.html (lowercase letters/digits/hyphens, 3–31 chars)');
+    showFieldError('target', 'internal target must match hosted/<cid>/<name>.html (lowercase letters/digits/hyphens, 3–31 chars)');
     ok = false;
   }
   if (!values.label || values.label.length > 120) {

@@ -76,7 +76,7 @@ export async function badgeSvg(url, { bg = '#ffffff', fg = '#000000', idText = '
   const qrPath = modulesToPath(data, size);
 
   // Captions: centered, small gray, sized to sit comfortably in their band.
-  const fontSize = CAPTION_HEIGHT * 0.78;
+  const fontSize = CAPTION_HEIGHT * 0.39;
   const captionX = width / 2;
   const captionTexts = lines
     .map((text, i) => {

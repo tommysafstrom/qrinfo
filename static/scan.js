@@ -4,12 +4,12 @@
 // button. On a hit the camera STOPS and the destination is shown (no inline
 // camera). A "Koder" button opens a grid of previously-scanned codes (stored on
 // this device) as thumbnails — the Wikipedia lead image for external articles,
-// or the first /info/images/<target>_N.jpg for internal taxa; tapping one
-// re-opens it.
+// or the first /hosted/<customerId>/images/<target>_N.jpg for internal taxa;
+// tapping one re-opens it.
 //
 // Wikipedia targets are rendered as a custom image-first page from the
 // Wikipedia REST API. Other external targets are shown in an iframe; internal
-// codes load /info/<target>.html. Codes are identified by the pair
+// codes load /hosted/<customerId>/<target>.html. Codes are identified by the pair
 // (customerId, qid), carried in the URL as /q/<customerId>/<qid> and used here
 // as the string id "<customerId>-<qid>". Resolution is client-side against the
 // published /codes.json (id → label + target).
@@ -443,12 +443,12 @@
   }
 
   // Resolve a thumbnail for a history card. Internal taxon pages keep their
-  // images under /info/images/<target>_1.jpg, so use the first one directly.
-  // Otherwise fall back to the Wikipedia summary image. Either way we cache the
-  // resolved URL so future opens are instant.
+  // images under /hosted/<customerId>/images/<target>_1.jpg, so use the first one
+  // directly. Otherwise fall back to the Wikipedia summary image. Either way we
+  // cache the resolved URL so future opens are instant.
   function fetchThumb(h, img) {
     if (h.type === "internal" && h.target) {
-      var src = "/info/images/" + h.target + "_1.jpg";
+      var src = "/hosted/" + h.customerId + "/images/" + h.target + "_1.jpg";
       img.onload = function () { img.onload = null; cacheThumb(h.id, src); };
       img.onerror = function () { img.onerror = null; }; // leave placeholder
       img.src = src;
@@ -603,12 +603,14 @@
     }
 
     // Non-Wikipedia: internal info page or a plain external site in an iframe.
-    // Internal codes are served as a static page at /info/<target>.html (the
-    // build validates that file exists). Loading /q/<customerId>/<qid> here would
-    // redirect back to scan.html and loop.
+    // Internal codes are served as a static page at
+    // /hosted/<customerId>/<target>.html (the build validates that file exists).
+    // Loading /q/<customerId>/<qid> here would redirect back to scan.html and loop.
     wikiReq++; // not a wiki view
     els.dest.classList.remove("is-wiki");
-    els.frame.src = external ? code.target : "/info/" + code.target + ".html";
+    els.frame.src = external
+      ? code.target
+      : "/hosted/" + code.customerId + "/" + code.target + ".html";
     els.dest.classList.remove("hidden");
     document.body.classList.add("viewing");
     setStatus("Visar: " + (code.label || idOf(code)));

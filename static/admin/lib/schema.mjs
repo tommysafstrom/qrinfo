@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-// Internal targets still resolve to info/<target>.html, so they keep the old
-// slug shape. (Codes are now identified by the numeric customerId/qid pair, not
-// by a slug.)
+// Internal targets resolve to hosted/<customerId>/<target>.html, so they keep
+// the slug shape. (Codes are now identified by the numeric customerId/qid pair,
+// not by a slug.)
 export const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{2,30}$/;
 
 // A code is identified by the pair (customerId, qid): each customer owns its own
@@ -48,7 +48,7 @@ function refineTarget(code, ctx) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['target'],
-        message: 'internal target must match the slug pattern (matches info/<slug>.html)',
+        message: 'internal target must match the slug pattern (matches hosted/<customerId>/<slug>.html)',
       });
     }
   }
