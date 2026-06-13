@@ -27,9 +27,10 @@ export async function checkExternalTargets(codes, { onCheck = () => {} } = {}) {
   const external = codes.filter(c => c.enabled && c.type === 'external');
   const results = [];
   for (const c of external) {
-    onCheck(c.slug);
+    const id = `${c.customerId}-${c.qid}`;
+    onCheck(id);
     const r = await headCheck(c.target);
-    results.push({ slug: c.slug, target: c.target, ...r });
+    results.push({ id, target: c.target, ...r });
   }
   return results;
 }

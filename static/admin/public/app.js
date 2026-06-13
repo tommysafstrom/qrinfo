@@ -1,7 +1,11 @@
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+// Internal targets still resolve to info/<target>.html, so they keep the slug shape.
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{2,30}$/;
+
+// A code is identified by the (customerId, qid) pair. "<customerId>-<qid>".
+const codeId = code => `${code.customerId}-${code.qid}`;
 
 // Per-launch URL token — derived from the page path so all server-side
 // routes get the right prefix even when the launch URL contains the token.
@@ -13,7 +17,8 @@ const apiPath = path => `${PREFIX}${path}`;
 
 const state = {
   codes: [],
-  editingSlug: null,
+  // The (customerId, qid) pair being edited, or null when adding.
+  editing: null,
 };
 
 function setStatus(text) { $('#status').textContent = text; }
@@ -47,14 +52,16 @@ async function api(method, path, body) {
 function renderCodeRow(code) {
   const row = document.createElement('div');
   row.className = 'code-row';
-  row.dataset.slug = code.slug;
-  const slug = encodeURIComponent(code.slug);
+  const id = codeId(code);
+  row.dataset.customerId = code.customerId;
+  row.dataset.qid = code.qid;
+  const qrPath = `/api/qr/${code.customerId}/${code.qid}`;
   row.innerHTML = `
-    <img class="qr-thumb" src="${apiPath('/api/qr/' + slug)}?format=png&size=80&target=local"
-         alt="QR-preview for ${escapeHtml(code.slug)}" width="80" height="80">
+    <img class="qr-thumb" src="${apiPath(qrPath)}?format=png&size=80&target=local"
+         alt="QR-preview for ${escapeHtml(id)}" width="80" height="80">
     <div class="meta">
       <div class="meta-top">
-        <span class="slug">${escapeHtml(code.slug)}</span>
+        <span class="slug">${escapeHtml(id)}</span>
         <span class="badge ${code.type}">${escapeHtml(code.type)}</span>
       </div>
       <span class="label">${escapeHtml(code.label)}</span>
@@ -65,8 +72,8 @@ function renderCodeRow(code) {
       <span>${code.enabled ? 'enabled' : 'disabled'}</span>
     </label>
     <div class="row-actions">
-      <a class="btn" href="${apiPath('/api/qr/' + slug)}?format=png&size=512&target=prod" download="${escapeHtml(code.slug)}.png">PNG</a>
-      <a class="btn" href="${apiPath('/api/qr/' + slug)}?format=svg&target=prod" download="${escapeHtml(code.slug)}.svg">SVG</a>
+      <a class="btn" href="${apiPath(qrPath)}?format=png&size=512&target=prod" download="${escapeHtml(id)}.png">PNG</a>
+      <a class="btn" href="${apiPath(qrPath)}?format=svg&target=prod" download="${escapeHtml(id)}.svg">SVG</a>
       <button type="button" data-action="edit">Edit</button>
       <button type="button" class="danger" data-action="delete">Delete</button>
     </div>
@@ -99,28 +106,33 @@ function openDialog({ mode, code }) {
   form.reset();
   clearFieldErrors();
 
-  $('#code-form-title').textContent = mode === 'edit' ? `Edit ${code.slug}` : 'Add code';
-  state.editingSlug = mode === 'edit' ? code.slug : null;
+  $('#code-form-title').textContent = mode === 'edit' ? `Edit ${codeId(code)}` : 'Add code';
+  state.editing = mode === 'edit' ? { customerId: code.customerId, qid: code.qid } : null;
 
-  const slugInput = form.elements.slug;
+  const customerIdInput = form.elements.customerId;
+  const qidInput = form.elements.qid;
   if (mode === 'edit') {
-    slugInput.value = code.slug;
-    slugInput.disabled = true;
+    customerIdInput.value = code.customerId;
+    qidInput.value = code.qid;
+    // Identity is immutable once created.
+    customerIdInput.disabled = true;
+    qidInput.disabled = true;
     form.elements.label.value = code.label;
     form.querySelector(`input[name=type][value=${code.type}]`).checked = true;
     form.elements.target.value = code.target;
     form.elements.enabled.checked = code.enabled;
   } else {
-    slugInput.disabled = false;
+    customerIdInput.disabled = false;
+    qidInput.disabled = false;
     form.elements.enabled.checked = true;
   }
   updateTargetHint();
   dialog.showModal();
-  slugInput.focus();
+  customerIdInput.focus();
 }
 
 function closeDialog() {
-  state.editingSlug = null;
+  state.editing = null;
   $('#code-dialog').close();
 }
 
@@ -156,8 +168,16 @@ function updateTargetHint() {
 function validateForm(values) {
   clearFieldErrors();
   let ok = true;
-  if (!SLUG_RE.test(values.slug)) {
-    showFieldError('slug', 'must match pattern (lowercase letters/digits/hyphens, 3–31 chars)');
+  if (!Number.isInteger(values.customerId) || values.customerId < 1) {
+    showFieldError('customerId', 'must be a positive integer');
+    ok = false;
+  }
+  if (!Number.isInteger(values.qid) || values.qid < 1) {
+    showFieldError('qid', 'must be a positive integer');
+    ok = false;
+  }
+  if (values.type === 'internal' && values.target && !SLUG_RE.test(values.target)) {
+    showFieldError('target', 'internal target must match info/<name>.html (lowercase letters/digits/hyphens, 3–31 chars)');
     ok = false;
   }
   if (!values.label || values.label.length > 120) {
@@ -186,7 +206,8 @@ async function submitForm(ev) {
   ev.preventDefault();
   const form = ev.target;
   const values = {
-    slug: form.elements.slug.value.trim(),
+    customerId: Number(form.elements.customerId.value),
+    qid: Number(form.elements.qid.value),
     label: form.elements.label.value.trim(),
     type: form.elements.type.value,
     target: form.elements.target.value.trim(),
@@ -196,8 +217,8 @@ async function submitForm(ev) {
 
   $('#code-save').disabled = true;
   try {
-    if (state.editingSlug) {
-      await api('PUT', `/api/codes/${encodeURIComponent(state.editingSlug)}`, values);
+    if (state.editing) {
+      await api('PUT', `/api/codes/${state.editing.customerId}/${state.editing.qid}`, values);
     } else {
       await api('POST', '/api/codes', values);
     }
@@ -221,17 +242,19 @@ async function submitForm(ev) {
 async function handleListClick(ev) {
   const row = ev.target.closest('.code-row');
   if (!row) return;
-  const slug = row.dataset.slug;
-  const code = state.codes.find(c => c.slug === slug);
+  const customerId = Number(row.dataset.customerId);
+  const qid = Number(row.dataset.qid);
+  const code = state.codes.find(c => c.customerId === customerId && c.qid === qid);
   if (!code) return;
+  const id = codeId(code);
 
   const action = ev.target.dataset.action;
   if (action === 'edit') {
     openDialog({ mode: 'edit', code });
   } else if (action === 'delete') {
-    if (!confirm(`Delete code "${slug}"? This removes it from the next deploy.`)) return;
+    if (!confirm(`Delete code "${id}"? This removes it from the next deploy.`)) return;
     try {
-      await api('DELETE', `/api/codes/${encodeURIComponent(slug)}`);
+      await api('DELETE', `/api/codes/${customerId}/${qid}`);
       await loadCodes();
     } catch (err) {
       alert(`delete failed: ${err.message}`);
@@ -241,7 +264,7 @@ async function handleListClick(ev) {
     const desired = checkbox.checked;
     checkbox.disabled = true;
     try {
-      await api('PATCH', `/api/codes/${encodeURIComponent(slug)}`, { enabled: desired });
+      await api('PATCH', `/api/codes/${customerId}/${qid}`, { enabled: desired });
       await loadCodes();
     } catch (err) {
       checkbox.checked = !desired;
@@ -285,7 +308,7 @@ function renderDiffSummary(diff) {
 function renderCodeMini(code) {
   return `
     <div class="diff-meta">
-      <span class="slug">${escapeHtml(code.slug)}</span>
+      <span class="slug">${escapeHtml(codeId(code))}</span>
       <span class="badge ${code.type}">${escapeHtml(code.type)}</span>
       <span class="label">${escapeHtml(code.label)}</span>
       <span class="target">${escapeHtml(code.target)}</span>
@@ -303,7 +326,7 @@ function renderModified(entry) {
   `).join('');
   return `
     <article class="diff-card modified">
-      <header><span class="slug">${escapeHtml(entry.slug)}</span><span class="changes">${entry.changes.length} field(s) changed</span></header>
+      <header><span class="slug">${escapeHtml(entry.id)}</span><span class="changes">${entry.changes.length} field(s) changed</span></header>
       <table class="diff-table">
         <thead><tr><th></th><th>before</th><th>after</th></tr></thead>
         <tbody>${rows}</tbody>

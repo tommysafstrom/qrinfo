@@ -92,8 +92,8 @@ Full instructions in [runbooks/admin.md](runbooks/admin.md#one-time-local-setup)
 ## What this static version does — and what it doesn't
 
 **Does:**
-- Public resolver `/q/<slug>` → real HTTP 302 to the destination, served
-  at Cloudflare's edge
+- Public resolver `/q/<customerId>/<qid>` → real HTTP 302 to the destination,
+  served at Cloudflare's edge
 - Internal info pages as plain HTML files under `info/<slug>.html`
 - Friendly fallback for unknown codes
 - Local admin UI for adding / editing / enabling codes

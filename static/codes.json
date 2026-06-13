@@ -2,7 +2,8 @@
   "version": 1,
   "codes": [
     {
-      "slug": "tulip",
+      "customerId": 1,
+      "qid": 1,
       "label": "Tulpan",
       "type": "external",
       "target": "https://en.wikipedia.org/wiki/Tulip",
@@ -11,7 +12,8 @@
       "updatedAt": "2026-05-30T00:00:00Z"
     },
     {
-      "slug": "sunflower",
+      "customerId": 1,
+      "qid": 2,
       "label": "Solros",
       "type": "external",
       "target": "https://en.wikipedia.org/wiki/Common_sunflower",
@@ -20,7 +22,8 @@
       "updatedAt": "2026-05-30T00:00:00Z"
     },
     {
-      "slug": "alleumgiganteum",
+      "customerId": 1,
+      "qid": 3,
       "label": "Alleum Giganteum",
       "type": "external",
       "target": "https://en.wikipedia.org/wiki/Allium_giganteum",
@@ -29,7 +32,8 @@
       "updatedAt": "2026-06-02T17:38:28.605Z"
     },
     {
-      "slug": "humle",
+      "customerId": 1,
+      "qid": 4,
       "label": "Humle",
       "type": "external",
       "target": "https://sv.wikipedia.org/wiki/Humle",
@@ -38,7 +42,8 @@
       "updatedAt": "2026-06-02T17:39:41.570Z"
     },
     {
-      "slug": "taxon2624",
+      "customerId": 2,
+      "qid": 1,
       "label": "Zea mays (Fodermajs Group) 'Arcade'",
       "type": "internal",
       "target": "taxon2624",
@@ -47,7 +52,8 @@
       "updatedAt": "2026-06-12T20:13:14.000Z"
     },
     {
-      "slug": "taxon11",
+      "customerId": 2,
+      "qid": 2,
       "label": "Acer platanoides 'Columnare'",
       "type": "internal",
       "target": "taxon11",
@@ -56,7 +62,8 @@
       "updatedAt": "2026-06-12T18:46:53.000Z"
     },
     {
-      "slug": "taxon19",
+      "customerId": 2,
+      "qid": 3,
       "label": "Acer tegmentosum",
       "type": "internal",
       "target": "taxon19",
@@ -65,7 +72,8 @@
       "updatedAt": "2026-06-12T18:47:28.000Z"
     },
     {
-      "slug": "taxon2223",
+      "customerId": 2,
+      "qid": 4,
       "label": "Achillea 'Coronation Gold'",
       "type": "internal",
       "target": "taxon2223",
@@ -74,7 +82,8 @@
       "updatedAt": "2026-06-12T18:47:37.000Z"
     },
     {
-      "slug": "taxon25",
+      "customerId": 2,
+      "qid": 5,
       "label": "Aconogonon × fennicum",
       "type": "internal",
       "target": "taxon25",
@@ -83,7 +92,8 @@
       "updatedAt": "2026-06-12T18:48:12.000Z"
     },
     {
-      "slug": "taxon27",
+      "customerId": 2,
+      "qid": 6,
       "label": "Actaea simplex 'Brunette'",
       "type": "internal",
       "target": "taxon27",
@@ -92,7 +102,8 @@
       "updatedAt": "2026-06-12T18:48:18.000Z"
     },
     {
-      "slug": "taxon36",
+      "customerId": 2,
+      "qid": 7,
       "label": "Alchemilla mollis",
       "type": "internal",
       "target": "taxon36",
@@ -101,7 +112,8 @@
       "updatedAt": "2026-06-12T18:49:02.000Z"
     },
     {
-      "slug": "taxon863",
+      "customerId": 2,
+      "qid": 8,
       "label": "Allium caeruleum",
       "type": "internal",
       "target": "taxon863",
@@ -110,7 +122,8 @@
       "updatedAt": "2026-06-12T18:49:25.000Z"
     },
     {
-      "slug": "taxon1106",
+      "customerId": 2,
+      "qid": 9,
       "label": "Allium stipitatum 'Mount Everest'",
       "type": "internal",
       "target": "taxon1106",
@@ -119,7 +132,8 @@
       "updatedAt": "2026-06-12T18:50:19.000Z"
     },
     {
-      "slug": "taxon38",
+      "customerId": 2,
+      "qid": 10,
       "label": "Amelanchier alnifolia FK ALVDAL E",
       "type": "internal",
       "target": "taxon38",
@@ -128,7 +142,8 @@
       "updatedAt": "2026-06-12T18:50:41.000Z"
     },
     {
-      "slug": "taxon56",
+      "customerId": 2,
+      "qid": 11,
       "label": "Artemisia ludoviciana",
       "type": "internal",
       "target": "taxon56",
@@ -137,7 +152,8 @@
       "updatedAt": "2026-06-12T18:52:22.000Z"
     },
     {
-      "slug": "taxon2623",
+      "customerId": 2,
+      "qid": 12,
       "label": "Avena nuda 'SW 071608'",
       "type": "internal",
       "target": "taxon2623",
@@ -146,7 +162,8 @@
       "updatedAt": "2026-06-12T18:53:55.000Z"
     },
     {
-      "slug": "taxon2622",
+      "customerId": 2,
+      "qid": 13,
       "label": "Avena sativa (Gulhavre Group) 'Matilda'",
       "type": "internal",
       "target": "taxon2622",
@@ -155,7 +172,8 @@
       "updatedAt": "2026-06-12T18:53:58.000Z"
     },
     {
-      "slug": "taxon2621",
+      "customerId": 2,
+      "qid": 14,
       "label": "Avena sativa (Vithavre Group) 'Belinda'",
       "type": "internal",
       "target": "taxon2621",
@@ -164,7 +182,8 @@
       "updatedAt": "2026-06-12T18:54:01.000Z"
     },
     {
-      "slug": "taxon77",
+      "customerId": 2,
+      "qid": 15,
       "label": "Berberis koreana",
       "type": "internal",
       "target": "taxon77",
@@ -173,7 +192,8 @@
       "updatedAt": "2026-06-12T18:54:20.000Z"
     },
     {
-      "slug": "taxon79",
+      "customerId": 2,
+      "qid": 16,
       "label": "Berberis thunbergii (Rödbladiga Group) 'Atropurpurea'",
       "type": "internal",
       "target": "taxon79",
@@ -182,7 +202,8 @@
       "updatedAt": "2026-06-12T18:54:25.000Z"
     },
     {
-      "slug": "taxon2634",
+      "customerId": 2,
+      "qid": 17,
       "label": "Beta vulgaris Sockerbeta Group",
       "type": "internal",
       "target": "taxon2634",
@@ -191,7 +212,8 @@
       "updatedAt": "2026-06-12T18:54:49.000Z"
     },
     {
-      "slug": "taxon83",
+      "customerId": 2,
+      "qid": 18,
       "label": "Betula utilis subsp. albosinensis",
       "type": "internal",
       "target": "taxon83",
@@ -200,7 +222,8 @@
       "updatedAt": "2026-06-12T18:55:07.000Z"
     },
     {
-      "slug": "taxon2632",
+      "customerId": 2,
+      "qid": 19,
       "label": "Brassica napus (Annua Group) 'Camaro'",
       "type": "internal",
       "target": "taxon2632",
@@ -209,7 +232,8 @@
       "updatedAt": "2026-06-12T18:55:26.000Z"
     },
     {
-      "slug": "taxon2633",
+      "customerId": 2,
+      "qid": 20,
       "label": "Brassica rapa (Oleifera Group) 'Auren CL'",
       "type": "internal",
       "target": "taxon2633",
@@ -218,7 +242,8 @@
       "updatedAt": "2026-06-12T18:55:54.000Z"
     },
     {
-      "slug": "taxon91",
+      "customerId": 2,
+      "qid": 21,
       "label": "Buddleja davidii 'Ile de France'",
       "type": "internal",
       "target": "taxon91",
@@ -227,7 +252,8 @@
       "updatedAt": "2026-06-12T18:56:16.000Z"
     },
     {
-      "slug": "taxon99",
+      "customerId": 2,
+      "qid": 22,
       "label": "Buxus sempervirens 'Vrams Gunnarstorp'",
       "type": "internal",
       "target": "taxon99",
@@ -236,7 +262,8 @@
       "updatedAt": "2026-06-12T18:56:38.000Z"
     },
     {
-      "slug": "taxon100",
+      "customerId": 2,
+      "qid": 23,
       "label": "Calamagrostis brachytricha",
       "type": "internal",
       "target": "taxon100",
@@ -245,7 +272,8 @@
       "updatedAt": "2026-06-12T18:56:46.000Z"
     },
     {
-      "slug": "taxon1115",
+      "customerId": 2,
+      "qid": 24,
       "label": "Camassia quamash 'Blue Melody'",
       "type": "internal",
       "target": "taxon1115",
@@ -254,7 +282,8 @@
       "updatedAt": "2026-06-12T18:57:20.000Z"
     },
     {
-      "slug": "taxon125",
+      "customerId": 2,
+      "qid": 25,
       "label": "Carpinus betulus 'Fastigiata'",
       "type": "internal",
       "target": "taxon125",
@@ -263,7 +292,8 @@
       "updatedAt": "2026-06-12T18:58:15.000Z"
     },
     {
-      "slug": "taxon126",
+      "customerId": 2,
+      "qid": 26,
       "label": "Carpinus betulus FK CARIN E",
       "type": "internal",
       "target": "taxon126",
@@ -272,7 +302,8 @@
       "updatedAt": "2026-06-12T18:58:18.000Z"
     },
     {
-      "slug": "taxon2483",
+      "customerId": 2,
+      "qid": 27,
       "label": "Centaurea montana 'Grandiflora'",
       "type": "internal",
       "target": "taxon2483",
@@ -281,7 +312,8 @@
       "updatedAt": "2026-06-12T18:58:34.000Z"
     },
     {
-      "slug": "taxon2654",
+      "customerId": 2,
+      "qid": 28,
       "label": "Cichorium intybus (Sativum Group) 'Grasslands Puna'",
       "type": "internal",
       "target": "taxon2654",
@@ -290,7 +322,8 @@
       "updatedAt": "2026-06-12T18:59:04.000Z"
     },
     {
-      "slug": "taxon898",
+      "customerId": 2,
+      "qid": 29,
       "label": "Clematis Viticella Group",
       "type": "internal",
       "target": "taxon898",
@@ -299,7 +332,8 @@
       "updatedAt": "2026-06-12T18:59:53.000Z"
     },
     {
-      "slug": "taxon166",
+      "customerId": 2,
+      "qid": 30,
       "label": "Cornus mas",
       "type": "internal",
       "target": "taxon166",
@@ -308,7 +342,8 @@
       "updatedAt": "2026-06-12T19:00:39.000Z"
     },
     {
-      "slug": "taxon170",
+      "customerId": 2,
+      "qid": 31,
       "label": "Corylus avellana",
       "type": "internal",
       "target": "taxon170",
@@ -317,7 +352,8 @@
       "updatedAt": "2026-06-12T19:01:07.000Z"
     },
     {
-      "slug": "taxon171",
+      "customerId": 2,
+      "qid": 32,
       "label": "Corylus avellana 'Contorta'",
       "type": "internal",
       "target": "taxon171",
@@ -326,7 +362,8 @@
       "updatedAt": "2026-06-12T19:01:11.000Z"
     },
     {
-      "slug": "taxon172",
+      "customerId": 2,
+      "qid": 33,
       "label": "Corylus colurna",
       "type": "internal",
       "target": "taxon172",
@@ -335,7 +372,8 @@
       "updatedAt": "2026-06-12T19:01:16.000Z"
     },
     {
-      "slug": "taxon174",
+      "customerId": 2,
+      "qid": 34,
       "label": "Cotinus coggygria (Rubrifolius Group) 'Royal Purple'",
       "type": "internal",
       "target": "taxon174",
@@ -344,7 +382,8 @@
       "updatedAt": "2026-06-12T19:01:28.000Z"
     },
     {
-      "slug": "taxon177",
+      "customerId": 2,
+      "qid": 35,
       "label": "Cotoneaster dammeri 'Major'",
       "type": "internal",
       "target": "taxon177",
@@ -353,7 +392,8 @@
       "updatedAt": "2026-06-12T19:01:36.000Z"
     },
     {
-      "slug": "taxon1121",
+      "customerId": 2,
+      "qid": 36,
       "label": "Crocus chrysanthus 'Romance'",
       "type": "internal",
       "target": "taxon1121",
@@ -362,7 +402,8 @@
       "updatedAt": "2026-06-12T19:02:24.000Z"
     },
     {
-      "slug": "taxon3002",
+      "customerId": 2,
+      "qid": 37,
       "label": "Crocus korolkowii",
       "type": "internal",
       "target": "taxon3002",
@@ -371,7 +412,8 @@
       "updatedAt": "2026-06-12T19:02:31.000Z"
     },
     {
-      "slug": "taxon2020",
+      "customerId": 2,
+      "qid": 38,
       "label": "Crocus sieberi 'Firefly'",
       "type": "internal",
       "target": "taxon2020",
@@ -380,7 +422,8 @@
       "updatedAt": "2026-06-12T19:02:36.000Z"
     },
     {
-      "slug": "taxon188",
+      "customerId": 2,
+      "qid": 39,
       "label": "Cytisus oromediterraneus",
       "type": "internal",
       "target": "taxon188",
@@ -389,7 +432,8 @@
       "updatedAt": "2026-06-12T19:03:40.000Z"
     },
     {
-      "slug": "taxon1012",
+      "customerId": 2,
+      "qid": 40,
       "label": "Daphne mezereum",
       "type": "internal",
       "target": "taxon1012",
@@ -398,7 +442,8 @@
       "updatedAt": "2026-06-12T19:03:48.000Z"
     },
     {
-      "slug": "taxon546",
+      "customerId": 2,
+      "qid": 41,
       "label": "Dasiphora (Fruticosa Group) 'Abbotswood' E",
       "type": "internal",
       "target": "taxon546",
@@ -407,7 +452,8 @@
       "updatedAt": "2026-06-12T19:03:54.000Z"
     },
     {
-      "slug": "taxon198",
+      "customerId": 2,
+      "qid": 42,
       "label": "Diervilla lonicera",
       "type": "internal",
       "target": "taxon198",
@@ -416,7 +462,8 @@
       "updatedAt": "2026-06-12T19:05:13.000Z"
     },
     {
-      "slug": "taxon2817",
+      "customerId": 2,
+      "qid": 43,
       "label": "Digitalis ferruginea",
       "type": "internal",
       "target": "taxon2817",
@@ -425,7 +472,8 @@
       "updatedAt": "2026-06-12T19:05:16.000Z"
     },
     {
-      "slug": "taxon213",
+      "customerId": 2,
+      "qid": 44,
       "label": "Elaeagnus commutata 'Zempin'",
       "type": "internal",
       "target": "taxon213",
@@ -434,7 +482,8 @@
       "updatedAt": "2026-06-12T19:25:12.000Z"
     },
     {
-      "slug": "taxon1354",
+      "customerId": 2,
+      "qid": 45,
       "label": "Eranthis hyemalis",
       "type": "internal",
       "target": "taxon1354",
@@ -443,7 +492,8 @@
       "updatedAt": "2026-06-12T19:25:24.000Z"
     },
     {
-      "slug": "taxon220",
+      "customerId": 2,
+      "qid": 46,
       "label": "Erica carnea 'Rosalie'",
       "type": "internal",
       "target": "taxon220",
@@ -452,7 +502,8 @@
       "updatedAt": "2026-06-12T19:25:40.000Z"
     },
     {
-      "slug": "taxon231",
+      "customerId": 2,
+      "qid": 47,
       "label": "Euonymus fortunei var. vegetus",
       "type": "internal",
       "target": "taxon231",
@@ -461,7 +512,8 @@
       "updatedAt": "2026-06-12T19:26:17.000Z"
     },
     {
-      "slug": "taxon235",
+      "customerId": 2,
+      "qid": 48,
       "label": "Euphorbia palustris",
       "type": "internal",
       "target": "taxon235",
@@ -470,7 +522,8 @@
       "updatedAt": "2026-06-12T19:26:33.000Z"
     },
     {
-      "slug": "taxon1962",
+      "customerId": 2,
+      "qid": 49,
       "label": "Fagopyrum esculentum",
       "type": "internal",
       "target": "taxon1962",
@@ -479,7 +532,8 @@
       "updatedAt": "2026-06-12T19:26:46.000Z"
     },
     {
-      "slug": "taxon239",
+      "customerId": 2,
+      "qid": 50,
       "label": "Fagus sylvatica Purpurbladiga Group",
       "type": "internal",
       "target": "taxon239",
@@ -488,7 +542,8 @@
       "updatedAt": "2026-06-12T19:26:54.000Z"
     },
     {
-      "slug": "taxon1355",
+      "customerId": 2,
+      "qid": 51,
       "label": "Fritillaria imperialis 'Lutea'",
       "type": "internal",
       "target": "taxon1355",
@@ -497,7 +552,8 @@
       "updatedAt": "2026-06-12T19:28:14.000Z"
     },
     {
-      "slug": "taxon2988",
+      "customerId": 2,
+      "qid": 52,
       "label": "Geranium × cantabrigiense 'St. Ola'",
       "type": "internal",
       "target": "taxon2988",
@@ -506,7 +562,8 @@
       "updatedAt": "2026-06-12T19:28:42.000Z"
     },
     {
-      "slug": "taxon2987",
+      "customerId": 2,
+      "qid": 53,
       "label": "Geranium renardii 'Philippe Vapelle'",
       "type": "internal",
       "target": "taxon2987",
@@ -515,7 +572,8 @@
       "updatedAt": "2026-06-12T19:29:04.000Z"
     },
     {
-      "slug": "taxon265",
+      "customerId": 2,
+      "qid": 54,
       "label": "Geranium sanguineum 'Max Frei'",
       "type": "internal",
       "target": "taxon265",
@@ -524,7 +582,8 @@
       "updatedAt": "2026-06-12T19:29:10.000Z"
     },
     {
-      "slug": "taxon2629",
+      "customerId": 2,
+      "qid": 55,
       "label": "Glycine max 'Obelix'",
       "type": "internal",
       "target": "taxon2629",
@@ -533,7 +592,8 @@
       "updatedAt": "2026-06-12T19:29:35.000Z"
     },
     {
-      "slug": "taxon271",
+      "customerId": 2,
+      "qid": 56,
       "label": "Gymnocladus dioicus",
       "type": "internal",
       "target": "taxon271",
@@ -542,7 +602,8 @@
       "updatedAt": "2026-06-12T19:29:39.000Z"
     },
     {
-      "slug": "taxon279",
+      "customerId": 2,
+      "qid": 57,
       "label": "Hamamelis × intermedia",
       "type": "internal",
       "target": "taxon279",
@@ -551,7 +612,8 @@
       "updatedAt": "2026-06-12T19:30:00.000Z"
     },
     {
-      "slug": "taxon2313",
+      "customerId": 2,
+      "qid": 58,
       "label": "Hepatica transsilvanica",
       "type": "internal",
       "target": "taxon2313",
@@ -560,7 +622,8 @@
       "updatedAt": "2026-06-12T19:32:06.000Z"
     },
     {
-      "slug": "taxon318",
+      "customerId": 2,
+      "qid": 59,
       "label": "Hippophae rhamnoides 'Hikul'",
       "type": "internal",
       "target": "taxon318",
@@ -569,7 +632,8 @@
       "updatedAt": "2026-06-12T19:32:33.000Z"
     },
     {
-      "slug": "taxon2620",
+      "customerId": 2,
+      "qid": 60,
       "label": "Hordeum vulgare (Distichon Group) 'RGT Planet'",
       "type": "internal",
       "target": "taxon2620",
@@ -578,7 +642,8 @@
       "updatedAt": "2026-06-12T19:32:39.000Z"
     },
     {
-      "slug": "taxon2619",
+      "customerId": 2,
+      "qid": 61,
       "label": "Hordeum vulgare (Hexastichon Group) 'SW Judit'",
       "type": "internal",
       "target": "taxon2619",
@@ -587,7 +652,8 @@
       "updatedAt": "2026-06-12T19:32:42.000Z"
     },
     {
-      "slug": "taxon341",
+      "customerId": 2,
+      "qid": 62,
       "label": "Hosta sieboldiana",
       "type": "internal",
       "target": "taxon341",
@@ -596,7 +662,8 @@
       "updatedAt": "2026-06-12T19:33:32.000Z"
     },
     {
-      "slug": "taxon337",
+      "customerId": 2,
+      "qid": 63,
       "label": "Hosta 'Sum and Substance'",
       "type": "internal",
       "target": "taxon337",
@@ -605,7 +672,8 @@
       "updatedAt": "2026-06-12T19:33:43.000Z"
     },
     {
-      "slug": "taxon344",
+      "customerId": 2,
+      "qid": 64,
       "label": "Hydrangea anomala subsp. petiolaris",
       "type": "internal",
       "target": "taxon344",
@@ -614,7 +682,8 @@
       "updatedAt": "2026-06-12T19:34:33.000Z"
     },
     {
-      "slug": "taxon345",
+      "customerId": 2,
+      "qid": 65,
       "label": "Hydrangea arborescens 'Annabelle'",
       "type": "internal",
       "target": "taxon345",
@@ -623,7 +692,8 @@
       "updatedAt": "2026-06-12T19:34:36.000Z"
     },
     {
-      "slug": "taxon1560",
+      "customerId": 2,
+      "qid": 66,
       "label": "Hydrangea paniculata 'Grandiflora'",
       "type": "internal",
       "target": "taxon1560",
@@ -632,7 +702,8 @@
       "updatedAt": "2026-06-12T19:34:41.000Z"
     },
     {
-      "slug": "taxon1133",
+      "customerId": 2,
+      "qid": 67,
       "label": "Iris reticulata",
       "type": "internal",
       "target": "taxon1133",
@@ -641,7 +712,8 @@
       "updatedAt": "2026-06-12T19:36:33.000Z"
     },
     {
-      "slug": "taxon3028",
+      "customerId": 2,
+      "qid": 68,
       "label": "Juglans cinerea FK ÖREBRO E",
       "type": "internal",
       "target": "taxon3028",
@@ -650,7 +722,8 @@
       "updatedAt": "2026-06-12T19:36:47.000Z"
     },
     {
-      "slug": "taxon376",
+      "customerId": 2,
+      "qid": 69,
       "label": "Juniperus communis 'Fontän'",
       "type": "internal",
       "target": "taxon376",
@@ -659,7 +732,8 @@
       "updatedAt": "2026-06-12T19:37:09.000Z"
     },
     {
-      "slug": "taxon1016",
+      "customerId": 2,
+      "qid": 70,
       "label": "Laburnum × watereri 'Vossii'",
       "type": "internal",
       "target": "taxon1016",
@@ -668,7 +742,8 @@
       "updatedAt": "2026-06-12T19:38:13.000Z"
     },
     {
-      "slug": "taxon2152",
+      "customerId": 2,
+      "qid": 71,
       "label": "Lavandula angustifolia 'Munstead'",
       "type": "internal",
       "target": "taxon2152",
@@ -677,7 +752,8 @@
       "updatedAt": "2026-06-12T19:38:59.000Z"
     },
     {
-      "slug": "taxon1357",
+      "customerId": 2,
+      "qid": 72,
       "label": "Leucojum aestivum 'Gravetye'",
       "type": "internal",
       "target": "taxon1357",
@@ -686,7 +762,8 @@
       "updatedAt": "2026-06-12T19:39:15.000Z"
     },
     {
-      "slug": "taxon418",
+      "customerId": 2,
+      "qid": 73,
       "label": "Ligustrum vulgare 'Lodense'",
       "type": "internal",
       "target": "taxon418",
@@ -695,7 +772,8 @@
       "updatedAt": "2026-06-12T19:39:34.000Z"
     },
     {
-      "slug": "taxon2631",
+      "customerId": 2,
+      "qid": 74,
       "label": "Linum usitatissimum (Oljelin Group) 'Serenade'",
       "type": "internal",
       "target": "taxon2631",
@@ -704,7 +782,8 @@
       "updatedAt": "2026-06-12T19:40:05.000Z"
     },
     {
-      "slug": "taxon2253",
+      "customerId": 2,
+      "qid": 75,
       "label": "Lonicera caerulea var. kamtschatica 'Blo D' ANJA E",
       "type": "internal",
       "target": "taxon2253",
@@ -713,7 +792,8 @@
       "updatedAt": "2026-06-12T19:40:27.000Z"
     },
     {
-      "slug": "taxon1719",
+      "customerId": 2,
+      "qid": 76,
       "label": "Lonicera maackii",
       "type": "internal",
       "target": "taxon1719",
@@ -722,7 +802,8 @@
       "updatedAt": "2026-06-12T19:40:43.000Z"
     },
     {
-      "slug": "taxon2630",
+      "customerId": 2,
+      "qid": 77,
       "label": "Lupinus angustifolius 'Boregine'",
       "type": "internal",
       "target": "taxon2630",
@@ -731,7 +812,8 @@
       "updatedAt": "2026-06-12T19:41:07.000Z"
     },
     {
-      "slug": "taxon431",
+      "customerId": 2,
+      "qid": 78,
       "label": "Magnolia (Liliiflora Group) 'Galaxy'",
       "type": "internal",
       "target": "taxon431",
@@ -740,7 +822,8 @@
       "updatedAt": "2026-06-12T19:41:48.000Z"
     },
     {
-      "slug": "taxon434",
+      "customerId": 2,
+      "qid": 79,
       "label": "Magnolia stellata 'Royal Star'",
       "type": "internal",
       "target": "taxon434",
@@ -749,7 +832,8 @@
       "updatedAt": "2026-06-12T19:42:01.000Z"
     },
     {
-      "slug": "taxon457",
+      "customerId": 2,
+      "qid": 80,
       "label": "Malus toringo var. sargentii FK ESKILSTUNA E",
       "type": "internal",
       "target": "taxon457",
@@ -758,7 +842,8 @@
       "updatedAt": "2026-06-12T19:43:12.000Z"
     },
     {
-      "slug": "taxon458",
+      "customerId": 2,
+      "qid": 81,
       "label": "Malus tschonoskii",
       "type": "internal",
       "target": "taxon458",
@@ -767,7 +852,8 @@
       "updatedAt": "2026-06-12T19:43:16.000Z"
     },
     {
-      "slug": "taxon1273",
+      "customerId": 2,
+      "qid": 82,
       "label": "Malva moschata",
       "type": "internal",
       "target": "taxon1273",
@@ -776,7 +862,8 @@
       "updatedAt": "2026-06-12T19:43:22.000Z"
     },
     {
-      "slug": "taxon463",
+      "customerId": 2,
+      "qid": 83,
       "label": "Microbiota decussata",
       "type": "internal",
       "target": "taxon463",
@@ -785,7 +872,8 @@
       "updatedAt": "2026-06-12T19:43:46.000Z"
     },
     {
-      "slug": "taxon473",
+      "customerId": 2,
+      "qid": 84,
       "label": "Molinia caerulea subsp. arundinacea 'Karl Foerster'",
       "type": "internal",
       "target": "taxon473",
@@ -794,7 +882,8 @@
       "updatedAt": "2026-06-12T19:44:16.000Z"
     },
     {
-      "slug": "taxon2457",
+      "customerId": 2,
+      "qid": 85,
       "label": "Morus nigra",
       "type": "internal",
       "target": "taxon2457",
@@ -803,7 +892,8 @@
       "updatedAt": "2026-06-12T19:44:27.000Z"
     },
     {
-      "slug": "taxon792",
+      "customerId": 2,
+      "qid": 86,
       "label": "Neillia incisa 'Crispa'",
       "type": "internal",
       "target": "taxon792",
@@ -812,7 +902,8 @@
       "updatedAt": "2026-06-12T19:45:38.000Z"
     },
     {
-      "slug": "taxon477",
+      "customerId": 2,
+      "qid": 87,
       "label": "Nepeta × faassenii 'Walker's Low'",
       "type": "internal",
       "target": "taxon477",
@@ -821,7 +912,8 @@
       "updatedAt": "2026-06-12T19:45:44.000Z"
     },
     {
-      "slug": "taxon2652",
+      "customerId": 2,
+      "qid": 88,
       "label": "Onobrychis viciifolia 'Ambra'",
       "type": "internal",
       "target": "taxon2652",
@@ -830,7 +922,8 @@
       "updatedAt": "2026-06-12T19:46:07.000Z"
     },
     {
-      "slug": "taxon481",
+      "customerId": 2,
+      "qid": 89,
       "label": "Origanum vulgare 'Compactum'",
       "type": "internal",
       "target": "taxon481",
@@ -839,7 +932,8 @@
       "updatedAt": "2026-06-12T19:46:15.000Z"
     },
     {
-      "slug": "taxon482",
+      "customerId": 2,
+      "qid": 90,
       "label": "Ostrya carpinifolia",
       "type": "internal",
       "target": "taxon482",
@@ -848,7 +942,8 @@
       "updatedAt": "2026-06-12T19:46:26.000Z"
     },
     {
-      "slug": "taxon486",
+      "customerId": 2,
+      "qid": 91,
       "label": "Paeonia suffruticosa",
       "type": "internal",
       "target": "taxon486",
@@ -857,7 +952,8 @@
       "updatedAt": "2026-06-12T19:46:45.000Z"
     },
     {
-      "slug": "taxon490",
+      "customerId": 2,
+      "qid": 92,
       "label": "Papaver croceum",
       "type": "internal",
       "target": "taxon490",
@@ -866,7 +962,8 @@
       "updatedAt": "2026-06-12T19:46:54.000Z"
     },
     {
-      "slug": "taxon2989",
+      "customerId": 2,
+      "qid": 93,
       "label": "Phedimus kamtschaticus",
       "type": "internal",
       "target": "taxon2989",
@@ -875,7 +972,8 @@
       "updatedAt": "2026-06-12T19:47:31.000Z"
     },
     {
-      "slug": "taxon528",
+      "customerId": 2,
+      "qid": 94,
       "label": "Picea omorika 'Nana'",
       "type": "internal",
       "target": "taxon528",
@@ -884,7 +982,8 @@
       "updatedAt": "2026-06-12T19:49:05.000Z"
     },
     {
-      "slug": "taxon531",
+      "customerId": 2,
+      "qid": 95,
       "label": "Pinus jeffreyi",
       "type": "internal",
       "target": "taxon531",
@@ -893,7 +992,8 @@
       "updatedAt": "2026-06-12T19:49:23.000Z"
     },
     {
-      "slug": "taxon537",
+      "customerId": 2,
+      "qid": 96,
       "label": "Pinus peuce",
       "type": "internal",
       "target": "taxon537",
@@ -902,7 +1002,8 @@
       "updatedAt": "2026-06-12T19:49:39.000Z"
     },
     {
-      "slug": "taxon538",
+      "customerId": 2,
+      "qid": 97,
       "label": "Pinus ponderosa",
       "type": "internal",
       "target": "taxon538",
@@ -911,7 +1012,8 @@
       "updatedAt": "2026-06-12T19:49:44.000Z"
     },
     {
-      "slug": "taxon2625",
+      "customerId": 2,
+      "qid": 98,
       "label": "Pisum sativum (Foderärt Group) 'Ingrid'",
       "type": "internal",
       "target": "taxon2625",
@@ -920,7 +1022,8 @@
       "updatedAt": "2026-06-12T19:49:57.000Z"
     },
     {
-      "slug": "taxon2626",
+      "customerId": 2,
+      "qid": 99,
       "label": "Pisum sativum (Foderärt Group) 'SW Clara'",
       "type": "internal",
       "target": "taxon2626",
@@ -929,7 +1032,8 @@
       "updatedAt": "2026-06-12T19:50:00.000Z"
     },
     {
-      "slug": "taxon564",
+      "customerId": 2,
+      "qid": 100,
       "label": "Prunus 'Accolade'",
       "type": "internal",
       "target": "taxon564",
@@ -938,7 +1042,8 @@
       "updatedAt": "2026-06-12T19:51:36.000Z"
     },
     {
-      "slug": "taxon580",
+      "customerId": 2,
+      "qid": 101,
       "label": "Prunus pumila var. depressa E",
       "type": "internal",
       "target": "taxon580",
@@ -947,7 +1052,8 @@
       "updatedAt": "2026-06-12T19:52:45.000Z"
     },
     {
-      "slug": "taxon581",
+      "customerId": 2,
+      "qid": 102,
       "label": "Prunus sargentii",
       "type": "internal",
       "target": "taxon581",
@@ -956,7 +1062,8 @@
       "updatedAt": "2026-06-12T19:52:49.000Z"
     },
     {
-      "slug": "taxon600",
+      "customerId": 2,
+      "qid": 103,
       "label": "Quercus palustris",
       "type": "internal",
       "target": "taxon600",
@@ -965,7 +1072,8 @@
       "updatedAt": "2026-06-12T19:54:05.000Z"
     },
     {
-      "slug": "taxon616",
+      "customerId": 2,
+      "qid": 104,
       "label": "Rhododendron (Caucasicum Group) 'Cunningham's White'",
       "type": "internal",
       "target": "taxon616",
@@ -974,7 +1082,8 @@
       "updatedAt": "2026-06-12T19:55:17.000Z"
     },
     {
-      "slug": "taxon618",
+      "customerId": 2,
+      "qid": 105,
       "label": "Rhododendron (Yakushimanum Group) 'Edelweiss'",
       "type": "internal",
       "target": "taxon618",
@@ -983,7 +1092,8 @@
       "updatedAt": "2026-06-12T19:56:22.000Z"
     },
     {
-      "slug": "taxon632",
+      "customerId": 2,
+      "qid": 106,
       "label": "Rhododendron (Yakushimanum Group) 'Koichiro Wada'",
       "type": "internal",
       "target": "taxon632",
@@ -992,7 +1102,8 @@
       "updatedAt": "2026-06-12T19:56:34.000Z"
     },
     {
-      "slug": "taxon670",
+      "customerId": 2,
+      "qid": 107,
       "label": "Ribes nigrum",
       "type": "internal",
       "target": "taxon670",
@@ -1001,7 +1112,8 @@
       "updatedAt": "2026-06-12T19:57:48.000Z"
     },
     {
-      "slug": "taxon671",
+      "customerId": 2,
+      "qid": 108,
       "label": "Ribes rubrum",
       "type": "internal",
       "target": "taxon671",
@@ -1010,7 +1122,8 @@
       "updatedAt": "2026-06-12T19:58:00.000Z"
     },
     {
-      "slug": "taxon674",
+      "customerId": 2,
+      "qid": 109,
       "label": "Ribes uva-crispa 'Hinnonmäki Röd'",
       "type": "internal",
       "target": "taxon674",
@@ -1019,7 +1132,8 @@
       "updatedAt": "2026-06-12T19:58:08.000Z"
     },
     {
-      "slug": "taxon2618",
+      "customerId": 2,
+      "qid": 110,
       "label": "Secale cereale 'KWS Serafino'",
       "type": "internal",
       "target": "taxon2618",
@@ -1028,7 +1142,8 @@
       "updatedAt": "2026-06-12T20:03:38.000Z"
     },
     {
-      "slug": "taxon2990",
+      "customerId": 2,
+      "qid": 111,
       "label": "Sesleria autumnalis",
       "type": "internal",
       "target": "taxon2990",
@@ -1037,7 +1152,8 @@
       "updatedAt": "2026-06-12T20:03:57.000Z"
     },
     {
-      "slug": "taxon780",
+      "customerId": 2,
+      "qid": 112,
       "label": "Sorbus incana E",
       "type": "internal",
       "target": "taxon780",
@@ -1046,7 +1162,8 @@
       "updatedAt": "2026-06-12T20:05:06.000Z"
     },
     {
-      "slug": "taxon783",
+      "customerId": 2,
+      "qid": 113,
       "label": "Sorbus mougeotii FK BÄLINGE E",
       "type": "internal",
       "target": "taxon783",
@@ -1055,7 +1172,8 @@
       "updatedAt": "2026-06-12T20:05:18.000Z"
     },
     {
-      "slug": "taxon775",
+      "customerId": 2,
+      "qid": 114,
       "label": "Sorbus ulleungensis 'Dodong' E",
       "type": "internal",
       "target": "taxon775",
@@ -1064,7 +1182,8 @@
       "updatedAt": "2026-06-12T20:05:29.000Z"
     },
     {
-      "slug": "taxon1025",
+      "customerId": 2,
+      "qid": 115,
       "label": "Spiraea × cinerea 'Grefsheim' E",
       "type": "internal",
       "target": "taxon1025",
@@ -1073,7 +1192,8 @@
       "updatedAt": "2026-06-12T20:05:37.000Z"
     },
     {
-      "slug": "taxon797",
+      "customerId": 2,
+      "qid": 116,
       "label": "Symphoricarpos × chenaultii 'Hancock'",
       "type": "internal",
       "target": "taxon797",
@@ -1082,7 +1202,8 @@
       "updatedAt": "2026-06-12T20:06:25.000Z"
     },
     {
-      "slug": "taxon820",
+      "customerId": 2,
+      "qid": 117,
       "label": "Taxus × media 'Hillii'",
       "type": "internal",
       "target": "taxon820",
@@ -1091,7 +1212,8 @@
       "updatedAt": "2026-06-12T20:08:02.000Z"
     },
     {
-      "slug": "taxon824",
+      "customerId": 2,
+      "qid": 118,
       "label": "Thuja occidentalis 'Columna'",
       "type": "internal",
       "target": "taxon824",
@@ -1100,7 +1222,8 @@
       "updatedAt": "2026-06-12T20:08:29.000Z"
     },
     {
-      "slug": "taxon825",
+      "customerId": 2,
+      "qid": 119,
       "label": "Thuja occidentalis 'Fastigiata'",
       "type": "internal",
       "target": "taxon825",
@@ -1109,7 +1232,8 @@
       "updatedAt": "2026-06-12T20:08:32.000Z"
     },
     {
-      "slug": "taxon826",
+      "customerId": 2,
+      "qid": 120,
       "label": "Thuja occidentalis 'Little Champion'",
       "type": "internal",
       "target": "taxon826",
@@ -1118,7 +1242,8 @@
       "updatedAt": "2026-06-12T20:08:35.000Z"
     },
     {
-      "slug": "taxon829",
+      "customerId": 2,
+      "qid": 121,
       "label": "Thuja occidentalis 'Wareana'",
       "type": "internal",
       "target": "taxon829",
@@ -1127,7 +1252,8 @@
       "updatedAt": "2026-06-12T20:08:43.000Z"
     },
     {
-      "slug": "taxon1061",
+      "customerId": 2,
+      "qid": 122,
       "label": "Tilia × euchlora",
       "type": "internal",
       "target": "taxon1061",
@@ -1136,7 +1262,8 @@
       "updatedAt": "2026-06-12T20:09:08.000Z"
     },
     {
-      "slug": "taxon837",
+      "customerId": 2,
+      "qid": 123,
       "label": "Tilia mongolica",
       "type": "internal",
       "target": "taxon837",
@@ -1145,7 +1272,8 @@
       "updatedAt": "2026-06-12T20:09:23.000Z"
     },
     {
-      "slug": "taxon2647",
+      "customerId": 2,
+      "qid": 124,
       "label": "Trifolium pratense 'Vicky'",
       "type": "internal",
       "target": "taxon2647",
@@ -1154,7 +1282,8 @@
       "updatedAt": "2026-06-12T20:09:42.000Z"
     },
     {
-      "slug": "taxon2614",
+      "customerId": 2,
+      "qid": 125,
       "label": "Triticum aestivum (Vårvete Group) 'Diskett'",
       "type": "internal",
       "target": "taxon2614",
@@ -1163,7 +1292,8 @@
       "updatedAt": "2026-06-12T20:10:01.000Z"
     },
     {
-      "slug": "taxon2615",
+      "customerId": 2,
+      "qid": 126,
       "label": "Triticum aestivum (Vårvete Group) 'Lantvete från Dalarna'",
       "type": "internal",
       "target": "taxon2615",
@@ -1172,7 +1302,8 @@
       "updatedAt": "2026-06-12T20:10:03.000Z"
     },
     {
-      "slug": "taxon2617",
+      "customerId": 2,
+      "qid": 127,
       "label": "Triticum turgidum Dicoccon Group",
       "type": "internal",
       "target": "taxon2617",
@@ -1181,7 +1312,8 @@
       "updatedAt": "2026-06-12T20:10:09.000Z"
     },
     {
-      "slug": "taxon2459",
+      "customerId": 2,
+      "qid": 128,
       "label": "Viburnum carlesii 'Aurora'",
       "type": "internal",
       "target": "taxon2459",
@@ -1190,7 +1322,8 @@
       "updatedAt": "2026-06-12T20:12:07.000Z"
     },
     {
-      "slug": "taxon853",
+      "customerId": 2,
+      "qid": 129,
       "label": "Viburnum farreri",
       "type": "internal",
       "target": "taxon853",
@@ -1199,7 +1332,8 @@
       "updatedAt": "2026-06-12T20:12:10.000Z"
     },
     {
-      "slug": "taxon2627",
+      "customerId": 2,
+      "qid": 130,
       "label": "Vicia faba (Minuta Group) 'Taifun'",
       "type": "internal",
       "target": "taxon2627",

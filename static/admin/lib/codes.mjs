@@ -3,7 +3,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 
-import { codesJsonSchema, codeInputSchema, codePatchSchema } from './schema.mjs';
+import { codesJsonSchema, codeInputSchema, codePatchSchema, codeId } from './schema.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
@@ -31,11 +31,17 @@ function httpError(status, message) {
   return Object.assign(new Error(message), { status });
 }
 
+// Codes are identified by the (customerId, qid) pair. Helpers below take the
+// numeric pair; the API maps it from the /api/codes/<customerId>/<qid> route.
+function sameId(c, customerId, qid) {
+  return c.customerId === customerId && c.qid === qid;
+}
+
 export async function addCode(input) {
   const parsed = codeInputSchema.parse(input);
   const doc = await loadCodes();
-  if (doc.codes.some(c => c.slug === parsed.slug)) {
-    throw httpError(409, `slug "${parsed.slug}" already exists`);
+  if (doc.codes.some(c => sameId(c, parsed.customerId, parsed.qid))) {
+    throw httpError(409, `code "${codeId(parsed)}" already exists`);
   }
   const now = nowIso();
   const created = { ...parsed, createdAt: now, updatedAt: now };
@@ -44,36 +50,36 @@ export async function addCode(input) {
   return created;
 }
 
-export async function replaceCode(slug, input) {
+export async function replaceCode(customerId, qid, input) {
   const parsed = codeInputSchema.parse(input);
-  if (parsed.slug !== slug) {
-    throw httpError(400, `body slug "${parsed.slug}" does not match url slug "${slug}"`);
+  if (parsed.customerId !== customerId || parsed.qid !== qid) {
+    throw httpError(400, `body id "${codeId(parsed)}" does not match url id "${customerId}-${qid}"`);
   }
   const doc = await loadCodes();
-  const i = doc.codes.findIndex(c => c.slug === slug);
-  if (i < 0) throw httpError(404, `code "${slug}" not found`);
+  const i = doc.codes.findIndex(c => sameId(c, customerId, qid));
+  if (i < 0) throw httpError(404, `code "${customerId}-${qid}" not found`);
   const updated = { ...parsed, createdAt: doc.codes[i].createdAt, updatedAt: nowIso() };
   doc.codes[i] = updated;
   await saveCodes(doc);
   return updated;
 }
 
-export async function patchCode(slug, patch) {
+export async function patchCode(customerId, qid, patch) {
   const parsed = codePatchSchema.parse(patch);
   const doc = await loadCodes();
-  const i = doc.codes.findIndex(c => c.slug === slug);
-  if (i < 0) throw httpError(404, `code "${slug}" not found`);
-  const updated = { ...doc.codes[i], ...parsed, slug, updatedAt: nowIso() };
+  const i = doc.codes.findIndex(c => sameId(c, customerId, qid));
+  if (i < 0) throw httpError(404, `code "${customerId}-${qid}" not found`);
+  const updated = { ...doc.codes[i], ...parsed, customerId, qid, updatedAt: nowIso() };
   doc.codes[i] = updated;
   await saveCodes(doc);
   return updated;
 }
 
-export async function deleteCode(slug) {
+export async function deleteCode(customerId, qid) {
   const doc = await loadCodes();
   const before = doc.codes.length;
-  doc.codes = doc.codes.filter(c => c.slug !== slug);
-  if (doc.codes.length === before) throw httpError(404, `code "${slug}" not found`);
+  doc.codes = doc.codes.filter(c => !sameId(c, customerId, qid));
+  if (doc.codes.length === before) throw httpError(404, `code "${customerId}-${qid}" not found`);
   await saveCodes(doc);
-  return { slug, deleted: true };
+  return { customerId, qid, deleted: true };
 }

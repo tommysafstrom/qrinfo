@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 
 import { badgeSvg, badgePng } from './badge.mjs';
-import { codesJsonSchema } from './schema.mjs';
+import { codesJsonSchema, codeId } from './schema.mjs';
 import { resolveBaseUrl } from './baseUrl.mjs';
 import { shortSha, archiveSubtreeToDir } from './git.mjs';
 
@@ -38,6 +38,11 @@ function targetUrl(code) {
   return code.type === 'external' ? code.target : `/info/${code.target}.html`;
 }
 
+// The public path a printed QR encodes: /q/<customerId>/<qid>.
+function qPath(code) {
+  return `/q/${code.customerId}/${code.qid}`;
+}
+
 function summaryFor(code) {
   if (code.type === 'internal') return 'intern info-sida';
   try {
@@ -50,13 +55,14 @@ function summaryFor(code) {
 
 async function renderCard(code, baseUrl) {
   const altLabel = escapeHtml(code.label);
+  const path = qPath(code);
   // Inline the badge SVG so the live color picker can recolor its background.
   // The .badge-bg rect inside is the recolor target (see badge.mjs).
-  const svg = await badgeSvg(`${baseUrl}/q/${code.slug}`);
+  const svg = await badgeSvg(`${baseUrl}${path}`, { idText: codeId(code) });
   return `      <article class="card">
         <div class="badge" role="img" aria-label="QR-kod som länkar till ${altLabel}">${svg}</div>
         <h2>${altLabel}</h2>
-        <a href="/q/${code.slug}">/q/${code.slug} → ${escapeHtml(summaryFor(code))}</a>
+        <a href="${path}">${path} → ${escapeHtml(summaryFor(code))}</a>
       </article>`;
 }
 
@@ -69,9 +75,9 @@ async function emitRedirects(codes, distDir) {
   // Route printed-code scans through our own scanner page so a first scan from
   // the phone's native camera lands on the styled in-page view (wiki/iframe),
   // identical to scanning a 2nd code while already on scan.html. scan.js reads
-  // ?code=<slug> and opens the destination.
+  // ?c=<customerId>&q=<qid> and opens the destination.
   for (const c of codes.filter(c => c.enabled)) {
-    lines.push(`/q/${c.slug}\t/scan.html?code=${c.slug}\t302`);
+    lines.push(`${qPath(c)}\t/scan.html?c=${c.customerId}&q=${c.qid}\t302`);
   }
   lines.push('');
   lines.push('# Fallback for unknown codes');
@@ -119,7 +125,13 @@ async function emitScanner(codes, distDir, srcRoot) {
   const registry = {
     codes: codes
       .filter(c => c.enabled)
-      .map(c => ({ slug: c.slug, label: c.label, type: c.type, target: c.target })),
+      .map(c => ({
+        customerId: c.customerId,
+        qid: c.qid,
+        label: c.label,
+        type: c.type,
+        target: c.target,
+      })),
   };
   await writeFile(resolve(distDir, 'codes.json'), JSON.stringify(registry, null, 2) + '\n');
 }
@@ -128,11 +140,12 @@ async function emitQrs(codes, distDir, baseUrl) {
   const qrDir = resolve(distDir, 'qr');
   await mkdir(qrDir, { recursive: true });
   for (const c of codes.filter(c => c.enabled)) {
-    const url = `${baseUrl}/q/${c.slug}`;
-    const svg = await badgeSvg(url);
-    await writeFile(resolve(qrDir, `${c.slug}.svg`), svg);
-    const png = await badgePng(url, { size: 512 });
-    await writeFile(resolve(qrDir, `${c.slug}.png`), png);
+    const url = `${baseUrl}${qPath(c)}`;
+    const id = codeId(c);
+    const svg = await badgeSvg(url, { idText: id });
+    await writeFile(resolve(qrDir, `${id}.svg`), svg);
+    const png = await badgePng(url, { size: 512, idText: id });
+    await writeFile(resolve(qrDir, `${id}.png`), png);
   }
 }
 
@@ -167,7 +180,7 @@ async function checkInternalTargets(codes, srcRoot) {
     const p = resolve(srcRoot, 'info', `${c.target}.html`);
     if (!(await pathExists(p))) {
       throw new Error(
-        `code "${c.slug}" (internal) → info/${c.target}.html does not exist on disk`,
+        `code "${codeId(c)}" (internal) → info/${c.target}.html does not exist on disk`,
       );
     }
   }

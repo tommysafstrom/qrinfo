@@ -23,18 +23,19 @@ function cleanHeader(value, fallback = 'qrinfo') {
 
 // Build the Umami `payload` for one scan. `hit` distinguishes a resolved code
 // (qr-scan) from an unknown/disabled one that fell through to not-found (qr-miss).
-export function buildScanEvent({ slug, target, type, hit, env, version }) {
+// `path` is the public /q/<customerId>/<qid> URL; `id` is its "<cid>-<qid>" form.
+export function buildScanEvent({ id, path, target, type, hit, env, version }) {
   return {
     name: hit ? 'qr-scan' : 'qr-miss',
-    url: `/q/${slug}`,
-    data: { slug, target, type, env, version },
+    url: path,
+    data: { id, target, type, env, version },
   };
 }
 
 // A bare pageview (no `name`) for the same /q/<code> URL, so each scan also shows
 // up in Umami's standard Pages/URLs report. Pageviews don't carry custom `data`.
-export function buildPageview({ slug }) {
-  return { url: `/q/${slug}` };
+export function buildPageview({ path }) {
+  return { url: path };
 }
 
 // Fire one event. Returns a promise the caller is expected NOT to await.

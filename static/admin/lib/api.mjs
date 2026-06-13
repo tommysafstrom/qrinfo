@@ -12,7 +12,7 @@ import { pngBuffer, svgString } from './qr.mjs';
 import { loadState } from './state.mjs';
 import { diffCodes } from './diff.mjs';
 import { showAtRef } from './git.mjs';
-import { codesJsonSchema } from './schema.mjs';
+import { codesJsonSchema, codeId } from './schema.mjs';
 import { runPreview } from './preview.mjs';
 import { createReleaseTag, listReleases, suggestNextN, workingTreeReport, nextReleasePreview } from './tag.mjs';
 import { runDeploy } from './deploy.mjs';
@@ -51,24 +51,27 @@ async function postCodes(req, res, ctx) {
 async function putCode(req, res, ctx) {
   const body = await ctx.readBody(req);
   if (!body) throw Object.assign(new Error('body required'), { status: 400 });
-  const updated = await replaceCode(ctx.params[0], body);
+  const [customerId, qid] = ctx.params.map(Number);
+  const updated = await replaceCode(customerId, qid, body);
   sendJson(res, 200, updated);
 }
 
 async function patchCodeHandler(req, res, ctx) {
   const body = await ctx.readBody(req);
   if (!body) throw Object.assign(new Error('body required'), { status: 400 });
-  const updated = await patchCode(ctx.params[0], body);
+  const [customerId, qid] = ctx.params.map(Number);
+  const updated = await patchCode(customerId, qid, body);
   sendJson(res, 200, updated);
 }
 
 async function deleteCodeHandler(_req, res, ctx) {
-  const result = await deleteCode(ctx.params[0]);
+  const [customerId, qid] = ctx.params.map(Number);
+  const result = await deleteCode(customerId, qid);
   sendJson(res, 200, result);
 }
 
 async function getQr(_req, res, ctx) {
-  const slug = ctx.params[0];
+  const [customerId, qid] = ctx.params.map(Number);
   const format = (ctx.url.searchParams.get('format') ?? 'png').toLowerCase();
   const target = (ctx.url.searchParams.get('target') ?? 'local').toLowerCase();
   const sizeRaw = ctx.url.searchParams.get('size');
@@ -82,26 +85,27 @@ async function getQr(_req, res, ctx) {
   }
 
   const doc = await loadCodes();
-  const code = doc.codes.find(c => c.slug === slug);
-  if (!code) throw Object.assign(new Error(`code "${slug}" not found`), { status: 404 });
+  const code = doc.codes.find(c => c.customerId === customerId && c.qid === qid);
+  if (!code) throw Object.assign(new Error(`code "${customerId}-${qid}" not found`), { status: 404 });
 
+  const id = codeId(code);
   const base = resolveBaseUrl(target);
-  const url = `${base}/q/${code.slug}`;
+  const url = `${base}/q/${code.customerId}/${code.qid}`;
 
   if (format === 'svg') {
-    const svg = await svgString(url);
+    const svg = await svgString(url, { idText: id });
     res.writeHead(200, {
       'content-type': 'image/svg+xml; charset=utf-8',
       'cache-control': 'no-store',
-      'content-disposition': `inline; filename="${slug}.svg"`,
+      'content-disposition': `inline; filename="${id}.svg"`,
     });
     res.end(svg);
   } else {
-    const buf = await pngBuffer(url, { size });
+    const buf = await pngBuffer(url, { size, idText: id });
     res.writeHead(200, {
       'content-type': 'image/png',
       'cache-control': 'no-store',
-      'content-disposition': `inline; filename="${slug}.png"`,
+      'content-disposition': `inline; filename="${id}.png"`,
       'content-length': buf.length,
     });
     res.end(buf);
@@ -221,15 +225,15 @@ const NOT_IMPLEMENTED = (_req, res) =>
   sendJson(res, 501, { error: 'not implemented in this phase' });
 
 const ROUTES = [
-  { method: 'GET',    pattern: /^\/api\/codes$/,                handler: getCodes },
-  { method: 'POST',   pattern: /^\/api\/codes$/,                handler: postCodes },
-  { method: 'PUT',    pattern: /^\/api\/codes\/([a-z0-9-]+)$/,  handler: putCode },
-  { method: 'PATCH',  pattern: /^\/api\/codes\/([a-z0-9-]+)$/,  handler: patchCodeHandler },
-  { method: 'DELETE', pattern: /^\/api\/codes\/([a-z0-9-]+)$/,  handler: deleteCodeHandler },
-  { method: 'GET',    pattern: /^\/api\/state$/,                handler: getState },
-  { method: 'GET',    pattern: /^\/api\/diff$/,                 handler: getDiff },
-  { method: 'GET',    pattern: /^\/api\/releases$/,             handler: getReleases },
-  { method: 'GET',    pattern: /^\/api\/qr\/([a-z0-9-]+)$/,     handler: getQr },
+  { method: 'GET',    pattern: /^\/api\/codes$/,                          handler: getCodes },
+  { method: 'POST',   pattern: /^\/api\/codes$/,                          handler: postCodes },
+  { method: 'PUT',    pattern: /^\/api\/codes\/([0-9]+)\/([0-9]+)$/,      handler: putCode },
+  { method: 'PATCH',  pattern: /^\/api\/codes\/([0-9]+)\/([0-9]+)$/,      handler: patchCodeHandler },
+  { method: 'DELETE', pattern: /^\/api\/codes\/([0-9]+)\/([0-9]+)$/,      handler: deleteCodeHandler },
+  { method: 'GET',    pattern: /^\/api\/state$/,                          handler: getState },
+  { method: 'GET',    pattern: /^\/api\/diff$/,                           handler: getDiff },
+  { method: 'GET',    pattern: /^\/api\/releases$/,                       handler: getReleases },
+  { method: 'GET',    pattern: /^\/api\/qr\/([0-9]+)\/([0-9]+)$/,         handler: getQr },
   { method: 'POST',   pattern: /^\/api\/preview$/,              handler: postPreview, sse: true },
   { method: 'POST',   pattern: /^\/api\/tag$/,                  handler: postTag },
   { method: 'POST',   pattern: /^\/api\/deploy$/,               handler: postDeploy, sse: true },

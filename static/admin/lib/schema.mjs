@@ -1,17 +1,28 @@
 import { z } from 'zod';
 
+// Internal targets still resolve to info/<target>.html, so they keep the old
+// slug shape. (Codes are now identified by the numeric customerId/qid pair, not
+// by a slug.)
 export const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{2,30}$/;
 
+// A code is identified by the pair (customerId, qid): each customer owns its own
+// qid number space. Both are positive integers and appear in the URL as
+// /q/<customerId>/<qid> and in the badge/file name as <customerId>-<qid>.
+const idInt = z.number().int().positive();
+
 const CODE_FIELDS = {
-  slug: z.string().regex(
-    SLUG_REGEX,
-    'slug must be lowercase letters/digits/hyphens, 3–31 chars, starting with a letter or digit',
-  ),
+  customerId: idInt,
+  qid: idInt,
   label: z.string().min(1).max(120),
   type: z.enum(['external', 'internal']),
   target: z.string().min(1).max(2000),
   enabled: z.boolean(),
 };
+
+/** Stable string id for a code: "<customerId>-<qid>". */
+export function codeId(code) {
+  return `${code.customerId}-${code.qid}`;
+}
 
 function refineTarget(code, ctx) {
   if (code.type === 'external') {
@@ -51,7 +62,8 @@ export const codeSchema = z.object({
 
 export const codeInputSchema = z.object(CODE_FIELDS).superRefine(refineTarget);
 
-export const codePatchSchema = z.object(CODE_FIELDS).partial().omit({ slug: true });
+// Identity (customerId + qid) is immutable once created, so a patch can't change it.
+export const codePatchSchema = z.object(CODE_FIELDS).partial().omit({ customerId: true, qid: true });
 
 export const codesJsonSchema = z.object({
   version: z.literal(1),
@@ -59,14 +71,15 @@ export const codesJsonSchema = z.object({
 }).superRefine((doc, ctx) => {
   const seen = new Set();
   for (const [i, c] of doc.codes.entries()) {
-    if (seen.has(c.slug)) {
+    const id = codeId(c);
+    if (seen.has(id)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['codes', i, 'slug'],
-        message: `duplicate slug "${c.slug}"`,
+        path: ['codes', i, 'qid'],
+        message: `duplicate code id "${id}" (customerId ${c.customerId}, qid ${c.qid})`,
       });
     }
-    seen.add(c.slug);
+    seen.add(id);
   }
 });
 

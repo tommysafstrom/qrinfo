@@ -122,11 +122,17 @@
       <h3 id="code-form-title">Add code</h3>
 
       <label class="field">
-        <span>Slug</span>
-        <input name="slug" type="text" required autocomplete="off"
-               pattern="^[a-z0-9][a-z0-9-]{2,30}$">
-        <small class="hint">lowercase letters/digits/hyphens, 3–31 chars; appears in the QR URL</small>
-        <small class="error" data-field-error="slug" hidden></small>
+        <span>Customer ID</span>
+        <input name="customerId" type="number" min="1" step="1" required autocomplete="off">
+        <small class="hint">which customer this code belongs to; appears in the QR URL /q/&lt;customerId&gt;/&lt;qid&gt;</small>
+        <small class="error" data-field-error="customerId" hidden></small>
+      </label>
+
+      <label class="field">
+        <span>QID</span>
+        <input name="qid" type="number" min="1" step="1" required autocomplete="off">
+        <small class="hint">code number within this customer; unique per customer</small>
+        <small class="error" data-field-error="qid" hidden></small>
       </label>
 
       <label class="field">

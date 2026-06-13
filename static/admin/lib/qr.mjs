@@ -3,10 +3,10 @@
 // (QR + "skannamig.com" caption on white).
 import { badgePng, badgeSvg } from './badge.mjs';
 
-export async function pngBuffer(url, { size = 512 } = {}) {
-  return badgePng(url, { size });
+export async function pngBuffer(url, { size = 512, idText } = {}) {
+  return badgePng(url, { size, idText });
 }
 
-export async function svgString(url) {
-  return badgeSvg(url);
+export async function svgString(url, { idText } = {}) {
+  return badgeSvg(url, { idText });
 }

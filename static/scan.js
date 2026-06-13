@@ -9,15 +9,17 @@
 //
 // Wikipedia targets are rendered as a custom image-first page from the
 // Wikipedia REST API. Other external targets are shown in an iframe; internal
-// codes load /q/<slug>. Resolution is client-side against the published
-// /codes.json (slug → label + target).
+// codes load /info/<target>.html. Codes are identified by the pair
+// (customerId, qid), carried in the URL as /q/<customerId>/<qid> and used here
+// as the string id "<customerId>-<qid>". Resolution is client-side against the
+// published /codes.json (id → label + target).
 
 (function () {
   "use strict";
 
-  // Same allowlist the rest of the system uses for /q/<slug>.
-  var VALID_CODE = /^[a-z0-9]{4,16}$/;
-  // Ignore a repeat decode of the same slug within this window.
+  // Matches a code id "<customerId>-<qid>" (both positive integers).
+  var VALID_ID = /^[1-9][0-9]*-[1-9][0-9]*$/;
+  // Ignore a repeat decode of the same id within this window.
   var REPEAT_MS = 2000;
   var HISTORY_KEY = "qrinfo.history.v1";
   var HISTORY_MAX = 60;
@@ -47,15 +49,15 @@
     historyCancel: document.getElementById("historyCancel"),
   };
 
-  var codesBySlug = {};
-  var last = { slug: null, at: 0 };
+  var codesById = {};
+  var last = { id: null, at: 0 };
   var wikiReq = 0; // guards against a slow fetch landing after the view changed
 
   // Delete mode: true while the user is marking history cards for removal.
-  // markedSlugs holds the slugs tapped for deletion; nothing is persisted until
+  // markedIds holds the code ids tapped for deletion; nothing is persisted until
   // they press "Spara" (cancel/close discards the marks).
   var deleting = false;
-  var markedSlugs = {};
+  var markedIds = {};
 
   var reader = null; // BrowserMultiFormatReader (ZXing fallback)
   var controls = null; // active camera controls (.stop())
@@ -87,14 +89,15 @@
     els.overlay.classList.remove("hidden");
   }
 
-  /** Pull a qrinfo slug out of a decoded QR string, or null if it isn't one. */
-  function extractSlug(raw) {
+  /** Pull a qrinfo code id ("<customerId>-<qid>") out of a decoded QR string,
+   *  or null if it isn't one. Accepts a bare id or a /q/<customerId>/<qid> URL. */
+  function extractId(raw) {
     var text = (raw || "").trim();
-    if (VALID_CODE.test(text)) return text; // bare slug
+    if (VALID_ID.test(text)) return text; // bare id
     try {
       var u = new URL(text);
-      var m = u.pathname.match(/\/q\/([a-z0-9]{4,16})\/?$/);
-      if (m) return m[1];
+      var m = u.pathname.match(/\/q\/([1-9][0-9]*)\/([1-9][0-9]*)\/?$/);
+      if (m) return m[1] + "-" + m[2];
     } catch (e) { /* not a URL */ }
     return null;
   }
@@ -126,7 +129,12 @@
     els.frame.src = "about:blank";
     document.body.classList.remove("history-open");
     document.body.classList.remove("viewing");
-    last = { slug: null, at: 0 };
+    last = { id: null, at: 0 };
+  }
+
+  /** String id "<customerId>-<qid>" for a code/registry/history entry. */
+  function idOf(code) {
+    return code.customerId + "-" + code.qid;
   }
 
   // Map a getUserMedia / scanner startup error to a user-facing overlay.
@@ -143,12 +151,12 @@
     setStatus("Kameran kunde inte startas.");
   }
 
-  // Feed a decoded QR string through the slug pipeline, reporting non-qrinfo
+  // Feed a decoded QR string through the id pipeline, reporting non-qrinfo
   // codes. Shared by the native and ZXing scan paths.
   function onDecoded(text) {
-    var slug = extractSlug(text);
-    if (slug) {
-      handleSlug(slug);
+    var id = extractId(text);
+    if (id) {
+      handleId(id);
     } else {
       setStatus("Den här koden hör inte till QR Info.");
     }
@@ -243,12 +251,12 @@
       .catch(reportCameraError);
   }
 
-  function handleSlug(slug) {
+  function handleId(id) {
     var now = Date.now();
-    if (last.slug === slug && now - last.at < REPEAT_MS) return;
-    last = { slug: slug, at: now };
+    if (last.id === id && now - last.at < REPEAT_MS) return;
+    last = { id: id, at: now };
 
-    var code = codesBySlug[slug];
+    var code = codesById[id];
     if (!code || code.enabled === false) {
       setStatus("Den här koden finns inte eller är avstängd.");
       return;
@@ -271,15 +279,18 @@
   // Move/insert this code at the front of the history (most-recent first),
   // preserving any cached thumbnail we fetched earlier.
   function recordHistory(code) {
+    var id = idOf(code);
     var list = loadHistory();
     var prev = null;
     list = list.filter(function (h) {
-      if (h.slug === code.slug) { prev = h; return false; }
+      if (h.id === id) { prev = h; return false; }
       return true;
     });
     list.unshift({
-      slug: code.slug,
-      label: code.label || code.slug,
+      id: id,
+      customerId: code.customerId,
+      qid: code.qid,
+      label: code.label || id,
       type: code.type,
       target: code.target,
       thumb: prev && prev.thumb ? prev.thumb : null,
@@ -288,13 +299,13 @@
     saveHistory(list);
   }
 
-  // Persist a fetched thumbnail URL for a slug so the grid is instant next time.
-  function cacheThumb(slug, url) {
+  // Persist a fetched thumbnail URL for a code id so the grid is instant next time.
+  function cacheThumb(id, url) {
     if (!url) return;
     var list = loadHistory();
     var changed = false;
     list.forEach(function (h) {
-      if (h.slug === slug && h.thumb !== url) { h.thumb = url; changed = true; }
+      if (h.id === id && h.thumb !== url) { h.thumb = url; changed = true; }
     });
     if (changed) saveHistory(list);
   }
@@ -321,7 +332,7 @@
       var card = document.createElement("button");
       card.type = "button";
       card.className = "card";
-      if (markedSlugs[h.slug]) card.classList.add("marked");
+      if (markedIds[h.id]) card.classList.add("marked");
 
       var img = document.createElement("img");
       img.className = "thumb";
@@ -349,12 +360,12 @@
         // In delete mode a tap toggles this card's removal mark instead of
         // opening it. Nothing is persisted until "Spara".
         if (deleting) {
-          if (markedSlugs[h.slug]) delete markedSlugs[h.slug];
-          else markedSlugs[h.slug] = true;
+          if (markedIds[h.id]) delete markedIds[h.id];
+          else markedIds[h.id] = true;
           card.classList.toggle("marked");
           return;
         }
-        var code = codesBySlug[h.slug] || h;
+        var code = codesById[h.id] || h;
         closeViews();
         stopCamera();
         document.body.classList.add("viewing");
@@ -402,7 +413,7 @@
 
   function enterDeleteMode() {
     deleting = true;
-    markedSlugs = {};
+    markedIds = {};
     document.body.classList.add("history-deleting");
     els.historyEditBar.classList.remove("hidden");
     renderHistory();
@@ -411,22 +422,24 @@
   // Leave delete mode and discard any pending marks (used by Ångra and on close).
   function exitDeleteMode() {
     deleting = false;
-    markedSlugs = {};
+    markedIds = {};
     document.body.classList.remove("history-deleting");
     els.historyEditBar.classList.add("hidden");
   }
 
+  // "Ångra": discard any pending marks and close the history without changes.
+  // (closeViews calls exitDeleteMode, dropping the marks.)
   function cancelDelete() {
-    exitDeleteMode();
-    renderHistory();
+    closeViews();
+    startScanner();
   }
 
-  // "Spara": forget every marked code, then leave delete mode.
+  // "Släng": forget every marked code, then close the history.
   function commitDelete() {
-    var list = loadHistory().filter(function (h) { return !markedSlugs[h.slug]; });
+    var list = loadHistory().filter(function (h) { return !markedIds[h.id]; });
     saveHistory(list);
-    exitDeleteMode();
-    renderHistory();
+    closeViews(); // also exits delete mode
+    startScanner();
   }
 
   // Resolve a thumbnail for a history card. Internal taxon pages keep their
@@ -436,7 +449,7 @@
   function fetchThumb(h, img) {
     if (h.type === "internal" && h.target) {
       var src = "/info/images/" + h.target + "_1.jpg";
-      img.onload = function () { img.onload = null; cacheThumb(h.slug, src); };
+      img.onload = function () { img.onload = null; cacheThumb(h.id, src); };
       img.onerror = function () { img.onerror = null; }; // leave placeholder
       img.src = src;
       return;
@@ -449,7 +462,7 @@
         var src = data.thumbnail || data.originalimage;
         if (src && src.source) {
           img.src = src.source;
-          cacheThumb(h.slug, src.source);
+          cacheThumb(h.id, src.source);
         }
       })
       .catch(function () { /* leave placeholder */ });
@@ -494,7 +507,7 @@
     els.dest.classList.add("is-wiki");
     els.dest.classList.remove("hidden");
     document.body.classList.add("viewing");
-    setStatus("Visar: " + (code.label || code.slug));
+    setStatus("Visar: " + (code.label || idOf(code)));
 
     fetch(summaryApi(article), { headers: { Accept: "application/json" } })
       .then(function (r) { return r.json(); })
@@ -509,7 +522,7 @@
           els.wikiHero.hidden = false;
         }
         if (data.thumbnail && data.thumbnail.source) {
-          cacheThumb(code.slug, data.thumbnail.source);
+          cacheThumb(idOf(code), data.thumbnail.source);
         }
         var pageUrl =
           (data.content_urls &&
@@ -579,7 +592,7 @@
 
   function showDestination(code) {
     var external = code.type === "external";
-    els.label.textContent = code.label || code.slug;
+    els.label.textContent = code.label || idOf(code);
 
     if (external) {
       var article = wikiArticle(code.target);
@@ -591,26 +604,29 @@
 
     // Non-Wikipedia: internal info page or a plain external site in an iframe.
     // Internal codes are served as a static page at /info/<target>.html (the
-    // build validates that file exists). Loading /q/<slug> here would redirect
-    // back to scan.html and loop.
+    // build validates that file exists). Loading /q/<customerId>/<qid> here would
+    // redirect back to scan.html and loop.
     wikiReq++; // not a wiki view
     els.dest.classList.remove("is-wiki");
     els.frame.src = external ? code.target : "/info/" + code.target + ".html";
     els.dest.classList.remove("hidden");
     document.body.classList.add("viewing");
-    setStatus("Visar: " + (code.label || code.slug));
+    setStatus("Visar: " + (code.label || idOf(code)));
   }
 
   // Release the camera when the page is hidden/navigated away.
   window.addEventListener("pagehide", stopCamera);
 
-  // Slug from ?code=<slug> — set when a printed code's /q/<slug> redirected here.
-  // We open that destination immediately (same in-page view as a 2nd scan)
-  // instead of starting the camera.
-  function entrySlug() {
+  // Code id from ?c=<customerId>&q=<qid> — set when a printed code's
+  // /q/<customerId>/<qid> redirected here. We open that destination immediately
+  // (same in-page view as a 2nd scan) instead of starting the camera.
+  function entryId() {
     try {
-      var slug = new URL(window.location.href).searchParams.get("code");
-      return slug && VALID_CODE.test(slug) ? slug : null;
+      var params = new URL(window.location.href).searchParams;
+      var c = params.get("c");
+      var q = params.get("q");
+      var id = c && q ? c + "-" + q : null;
+      return id && VALID_ID.test(id) ? id : null;
     } catch (e) { return null; }
   }
 
@@ -619,12 +635,12 @@
   fetch("/codes.json", { cache: "no-store" })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      (data.codes || []).forEach(function (c) { codesBySlug[c.slug] = c; });
+      (data.codes || []).forEach(function (c) { codesById[idOf(c)] = c; });
     })
     .catch(function () { /* registry unavailable — scanner still runs, just no matches */ })
     .finally(function () {
-      var slug = entrySlug();
-      var code = slug && codesBySlug[slug];
+      var id = entryId();
+      var code = id && codesById[id];
       if (code && code.enabled !== false) {
         // Arrived from a printed code: show the page, camera stays off until
         // the user taps "Skanna ny kod".

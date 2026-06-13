@@ -79,14 +79,14 @@ async function loadRules() {
   }
 }
 
-// slug → { type, target }, from the published registry. Used by scan tracking
-// now that /q/<slug> redirects to scan.html (so type/target can't be read off
-// rule.to anymore).
-async function loadCodeBySlug() {
+// "<customerId>-<qid>" → { type, target }, from the published registry. Used by
+// scan tracking now that /q/<customerId>/<qid> redirects to scan.html (so
+// type/target can't be read off rule.to anymore).
+async function loadCodeById() {
   try {
     const data = JSON.parse(await readFile(resolve(DIST, 'codes.json'), 'utf8'));
     const map = {};
-    for (const c of data.codes || []) map[c.slug] = { type: c.type, target: c.target };
+    for (const c of data.codes || []) map[`${c.customerId}-${c.qid}`] = { type: c.type, target: c.target };
     return map;
   } catch {
     return {};
@@ -165,11 +165,12 @@ function clientIp(req) {
 // never touches the response. `rule.isWildcard` is the /q/* not-found fallback.
 function trackScan(req, pathname, rule) {
   if (!UMAMI.host) return; // env-gated: no-op unless configured
-  const slug = pathname.slice('/q/'.length);
+  // pathname is /q/<customerId>/<qid>; id is "<customerId>-<qid>".
+  const id = pathname.slice('/q/'.length).replace(/\//g, '-');
   const hit = !rule.isWildcard;
-  // /q/<slug> now redirects to scan.html, so resolve the real type/target from
-  // the published registry rather than the redirect target.
-  const code = codeBySlug[slug];
+  // /q/<customerId>/<qid> now redirects to scan.html, so resolve the real
+  // type/target from the published registry rather than the redirect target.
+  const code = codeById[id];
   const type = code ? code.type : 'external';
   const target = code ? code.target : rule.to;
   const common = {
@@ -179,14 +180,14 @@ function trackScan(req, pathname, rule) {
     ip: clientIp(req),
     debug: UMAMI.debug,
   };
-  // custom event — carries hit/miss + slug/target/type/env/version
-  sendUmami(fetch, { ...common, payload: buildScanEvent({ slug, target, type, hit, env: ENV, version: VERSION }) });
+  // custom event — carries hit/miss + id/target/type/env/version
+  sendUmami(fetch, { ...common, payload: buildScanEvent({ id, path: pathname, target, type, hit, env: ENV, version: VERSION }) });
   // bare pageview — so /q/<code> appears in Umami's standard Pages/URLs report
-  sendUmami(fetch, { ...common, payload: buildPageview({ slug }) });
+  sendUmami(fetch, { ...common, payload: buildPageview({ path: pathname }) });
 }
 
 let rules = [];
-let codeBySlug = {};
+let codeById = {};
 
 async function handle(req, res) {
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
@@ -240,7 +241,7 @@ async function start() {
     process.exit(1);
   }
   rules = await loadRules();
-  codeBySlug = await loadCodeBySlug();
+  codeById = await loadCodeById();
   if (rules.length === 0) {
     console.warn(`warning: no rules loaded from dist/_redirects — only static files will be served`);
   } else {
