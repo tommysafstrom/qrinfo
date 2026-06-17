@@ -1,13 +1,20 @@
 {
   "version": 1,
   "current": {
-    "tag": "release/24",
-    "commit": "0c97b8b",
-    "cfDeployId": "pi-production-20260613211212",
-    "deployedAt": "2026-06-13T21:12:12.047Z",
-    "url": "http://192.168.148.4:8080"
+    "tag": "release/25",
+    "commit": "b64e596",
+    "cfDeployId": "e75ee6ea",
+    "deployedAt": "2026-06-17T19:28:07.615Z",
+    "url": "https://e75ee6ea.qrinfo.pages.dev"
   },
   "previous": [
+    {
+      "tag": "release/24",
+      "commit": "0c97b8b",
+      "cfDeployId": "pi-production-20260613211212",
+      "deployedAt": "2026-06-13T21:12:12.047Z",
+      "url": "http://192.168.148.4:8080"
+    },
     {
       "tag": "release/23",
       "commit": "e834bfb",
