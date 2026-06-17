@@ -16,6 +16,7 @@
       <a href="#pending" data-view="pending">Pending</a>
       <a href="#release" data-view="release">Release</a>
       <a href="#releases" data-view="releases">Releases</a>
+      <a href="#stats" data-view="stats">Stats</a>
     </nav>
   </header>
 
@@ -109,6 +110,27 @@
         <ol class="phase-list" id="rollback-phases"></ol>
         <pre class="log" id="rollback-log"></pre>
         <div class="progress-result" id="rollback-result"></div>
+      </div>
+    </section>
+
+    <section data-view="stats" class="view">
+      <div class="view-header">
+        <h2>Scan stats</h2>
+        <label class="stats-range">Period
+          <select id="stats-days">
+            <option value="1">last 24h</option>
+            <option value="7">last 7 days</option>
+            <option value="30" selected>last 30 days</option>
+            <option value="90">last 90 days</option>
+            <option value="365">last year</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">Scans recorded at the edge by the <code>/q</code> Pages
+        Function into Cloudflare Workers Analytics Engine. Counts use the sampled
+        estimate; at plaque volumes that is exact.</p>
+      <div id="stats-body">
+        <p class="loading">Loading…</p>
       </div>
     </section>
   </main>

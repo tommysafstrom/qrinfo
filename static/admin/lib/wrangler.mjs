@@ -1,7 +1,14 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const MOCK = process.env.MOCK_WRANGLER === '1' || process.env.OFFLINE === '1';
+
+// static/ — holds wrangler.toml and the functions/ directory. wrangler must run
+// with this as its cwd so it discovers functions/ (a sibling of dist/) and the
+// WAE binding in wrangler.toml, regardless of where the admin tool was launched.
+const STATIC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -23,6 +30,7 @@ async function runWrangler(args, onLog) {
     let child;
     try {
       child = spawn('wrangler', args, {
+        cwd: STATIC_ROOT,
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env, FORCE_COLOR: '0' },
       });

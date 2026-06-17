@@ -17,6 +17,7 @@ import { runPreview } from './preview.mjs';
 import { createReleaseTag, listReleases, suggestNextN, workingTreeReport, nextReleasePreview } from './tag.mjs';
 import { runDeploy } from './deploy.mjs';
 import { runRollback } from './rollback.mjs';
+import { scanCountsByCode } from './stats.mjs';
 
 function sendJson(res, status, value) {
   const body = JSON.stringify(value);
@@ -221,6 +222,13 @@ async function postRollback(_req, res) {
   }
 }
 
+async function getStats(_req, res, ctx) {
+  const daysRaw = ctx.url.searchParams.get('days');
+  const days = daysRaw ? Number(daysRaw) : 30;
+  const result = await scanCountsByCode({ days });
+  sendJson(res, 200, result);
+}
+
 const NOT_IMPLEMENTED = (_req, res) =>
   sendJson(res, 501, { error: 'not implemented in this phase' });
 
@@ -234,6 +242,7 @@ const ROUTES = [
   { method: 'GET',    pattern: /^\/api\/diff$/,                           handler: getDiff },
   { method: 'GET',    pattern: /^\/api\/releases$/,                       handler: getReleases },
   { method: 'GET',    pattern: /^\/api\/qr\/([0-9]+)\/([0-9]+)$/,         handler: getQr },
+  { method: 'GET',    pattern: /^\/api\/stats$/,                          handler: getStats },
   { method: 'POST',   pattern: /^\/api\/preview$/,              handler: postPreview, sse: true },
   { method: 'POST',   pattern: /^\/api\/tag$/,                  handler: postTag },
   { method: 'POST',   pattern: /^\/api\/deploy$/,               handler: postDeploy, sse: true },

@@ -807,6 +807,69 @@ function handleRollbackEvent({ event, data }) {
   }
 }
 
+// ─── Stats ────────────────────────────────────────────────────────────────
+
+function fmtLastSeen(v) {
+  if (!v) return '—';
+  // WAE returns timestamps as "YYYY-MM-DD hh:mm:ss" (UTC); make it a valid date.
+  const d = new Date(String(v).replace(' ', 'T') + 'Z');
+  return isNaN(d) ? escapeHtml(String(v)) : d.toLocaleString();
+}
+
+// Map the WAE id back to a label from the loaded codes, when we have it.
+function labelForId(id) {
+  const code = state.codes.find(c => codeId(c) === id);
+  return code ? code.label : (id === 'unknown' ? '(unresolved scans)' : '');
+}
+
+function renderStats(result) {
+  const body = $('#stats-body');
+  const rows = result.rows ?? [];
+  if (rows.length === 0) {
+    body.innerHTML = `<p class="loading">No scans recorded in this period.</p>`;
+    return;
+  }
+  const total = rows.reduce((s, r) => s + r.scans, 0);
+  const tr = rows.map(r => `
+    <tr>
+      <td class="slug">${escapeHtml(r.id)}</td>
+      <td>${escapeHtml(labelForId(r.id))}</td>
+      <td class="num">${r.scans}</td>
+      <td class="num">${r.misses}</td>
+      <td>${fmtLastSeen(r.lastSeen)}</td>
+    </tr>`).join('');
+  body.innerHTML = `
+    <p class="hint">${total} scan${total === 1 ? '' : 's'} across ${rows.length}
+      code${rows.length === 1 ? '' : 's'} · last ${result.days} days · dataset
+      <code>${escapeHtml(result.dataset)}</code></p>
+    <table class="stats-table">
+      <thead>
+        <tr><th>Code</th><th>Label</th><th class="num">Scans</th>
+            <th class="num">Misses</th><th>Last seen</th></tr>
+      </thead>
+      <tbody>${tr}</tbody>
+    </table>`;
+}
+
+async function loadStats() {
+  const body = $('#stats-body');
+  const days = $('#stats-days')?.value ?? '30';
+  body.innerHTML = '<p class="loading">Loading…</p>';
+  try {
+    // Ensure code labels are available for the id→label mapping.
+    if (state.codes.length === 0) {
+      try { await loadCodes(); } catch { /* labels are best-effort */ }
+    }
+    const result = await api('GET', `/api/stats?days=${encodeURIComponent(days)}`);
+    renderStats(result);
+  } catch (err) {
+    body.innerHTML = `<p class="error">Could not load stats: ${escapeHtml(err.message)}</p>
+      <p class="hint">Stats need <code>CLOUDFLARE_API_TOKEN</code> +
+        <code>CF_ACCOUNT_ID</code> in <code>static/.env</code> and at least one
+        recorded scan. This view only works once deployed to Cloudflare.</p>`;
+  }
+}
+
 // ─── Routing ────────────────────────────────────────────────────────────────
 
 const VIEW_LOADERS = {
@@ -814,6 +877,7 @@ const VIEW_LOADERS = {
   pending: loadPending,
   release: loadRelease,
   releases: loadReleases,
+  stats: loadStats,
 };
 
 function activateView(name) {
@@ -856,6 +920,7 @@ async function main() {
     else if (action === 'deploy') runDeployForTag(ev.target.dataset.tag);
   });
   $('#rollback-close').addEventListener('click', () => { $('#rollback-progress').hidden = true; });
+  $('#stats-days').addEventListener('change', () => loadStats());
 
   try { await loadCodes(); }
   catch (err) {
