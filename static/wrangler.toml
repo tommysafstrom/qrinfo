@@ -29,10 +29,10 @@ dataset = "qrinfo_scans"
 # env.ASSETS (the static-asset fetcher) is provided automatically for Pages
 # Functions — no binding declaration needed.
 
-# QRINFO_ENV labels scan events. Set the production value in the CF Pages project
-# (Settings > Environment variables) per branch; this is just the local default.
+# QRINFO_ENV labels scan events. This is the deployed (production) value — the
+# only branch we deploy. `wrangler pages dev` / local runs can override via env.
 [vars]
-QRINFO_ENV = "local"
+QRINFO_ENV = "production"
 # Account id for the /stats page's WAE SQL query (not secret — appears in
 # dashboard URLs). The matching token is a secret: `wrangler pages secret put
 # WAE_SQL_TOKEN`. Both are read by functions/_lib/wae-query.mjs.
