@@ -14,10 +14,14 @@ it for deploys.)
 2. You **commit** that change to git.
 3. You **tag** a release (`release/7`, `release/8`, …). A tag is a frozen
    snapshot you can deploy and roll back to.
-4. You **deploy** the tag. The tool builds the site and pushes it to the
-   live server (the Raspberry Pi at `192.168.148.4:8080`, fronted by
-   Cloudflare for HTTPS / `skannamig.com`).
+4. You **deploy** the tag. The tool builds the site and ships it to
+   **Cloudflare Pages** (project `qrinfo`, served at `skannamig.com`).
 5. If something breaks, you **roll back** with one click.
+
+> **Hosting:** migrated from the Raspberry Pi to Cloudflare Pages on
+> 2026-06-17. The Pi-deploy path still exists in the code for emergency
+> rollback (see the commented block in `static/.env`), but the live target
+> is now Cloudflare.
 
 You do all of steps 1–5 from a local admin tool that opens in your browser.
 You never edit files on the server directly.
@@ -26,12 +30,17 @@ You never edit files on the server directly.
 
 ## What "production" actually is
 
-- **Live site:** `skannamig.com` (Cloudflare gives it the HTTPS certificate).
-- **Real server behind it:** the Pi, serving `static/dist/` at
-  `http://192.168.148.4:8080` via pm2 (service `qrinfo-serve`).
-- **Deploy target is set in `static/.env`** as `DEPLOY_TARGET=pi`. That's why
-  deploys go to the Pi over SSH, not to Cloudflare Pages. Don't change this
-  unless you're migrating hosts.
+- **Live site:** `skannamig.com`, served by **Cloudflare Pages** (project
+  `qrinfo`, also reachable at `qrinfo.pages.dev`). Cloudflare gives the cert.
+- **Redirects + scan analytics:** `/q/<customerId>/<qid>` runs as a Pages
+  Function (`static/functions/q/...`) that records each scan to **Workers
+  Analytics Engine** (dataset `qrinfo_scans`), then 302s to the scanner.
+- **Stats:** the permanent `/stats` page (per-code + daily), behind Cloudflare
+  Access; also the **Stats** tab in the local admin tool. Both read WAE via the
+  SQL API (`CLOUDFLARE_API_TOKEN` + `CF_ACCOUNT_ID` in `.env`).
+- **Deploy target:** with `DEPLOY_TARGET` *unset* in `static/.env`, the tool
+  uses the wrangler/Cloudflare path. Auth is `wrangler login` (OAuth). The
+  commented `DEPLOY_TARGET=pi` block is kept only for emergency rollback.
 - **The current live release is tracked in `static/release-state.json`** —
   `current` is what's live now, `previous[]` is the rollback history.
 
@@ -45,12 +54,17 @@ npm install
 cp .env.example .env     # then fill it in — see below
 ```
 
+You also need wrangler authenticated once per machine: `npx wrangler login`.
+
 Your `.env` is already set up on this machine. It must contain at least:
 
 ```
-DEPLOY_TARGET=pi
-PI_SSH_HOST=claudeuser@192.168.148.4
-QR_BASE_URL_PROD=...        # the public hostname baked into the QR images
+# Cloudflare Pages target (DEPLOY_TARGET unset → wrangler path)
+CF_PAGES_PROJECT=qrinfo
+CF_ACCOUNT_ID=bf81aa0d612777a0d69cf259b0dbf94c
+CLOUDFLARE_ACCOUNT_ID=bf81aa0d612777a0d69cf259b0dbf94c
+CLOUDFLARE_API_TOKEN=...     # for the Stats SQL query (Account Analytics: Read)
+QR_BASE_URL_PROD=https://skannamig.com   # hostname baked into the QR images
 ```
 
 `.env` is gitignored (it holds secrets) and **nothing auto-loads it**. The
