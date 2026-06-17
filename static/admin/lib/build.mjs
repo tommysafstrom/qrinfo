@@ -48,26 +48,19 @@ function qPath(code) {
   return `/q/${code.customerId}/${code.qid}`;
 }
 
-function summaryFor(code) {
-  if (code.type === 'internal') return 'intern info-sida';
-  try {
-    const u = new URL(code.target);
-    return u.hostname.replace(/^www\./, '');
-  } catch {
-    return code.target.slice(0, 40);
-  }
-}
-
 async function renderCard(code, baseUrl) {
   const altLabel = escapeHtml(code.label);
   const path = qPath(code);
   // Inline the badge SVG so the live color picker can recolor its background.
   // The .badge-bg rect inside is the recolor target (see badge.mjs).
   const svg = await badgeSvg(`${baseUrl}${path}`, { idText: codeId(code) });
+  // No /q link or destination text on the public landing page: it would expose
+  // the full code→destination map and is a same-site-click source of scan-count
+  // inflation. The QR image itself is the scannable artifact; phones scan the
+  // printed plaque, not this page.
   return `      <article class="card">
-        <div class="badge" role="img" aria-label="QR-kod som länkar till ${altLabel}">${svg}</div>
+        <div class="badge" role="img" aria-label="QR-kod: ${altLabel}">${svg}</div>
         <h2>${altLabel}</h2>
-        <a href="${path}">${path} → ${escapeHtml(summaryFor(code))}</a>
       </article>`;
 }
 
@@ -120,6 +113,20 @@ async function emitIndex(codes, distDir, srcRoot, baseUrl) {
 
 async function emitNotFound(distDir, srcRoot) {
   await cp(resolve(srcRoot, 'not-found.html'), resolve(distDir, 'not-found.html'));
+}
+
+// Keep crawlers out of the redirect endpoints (each crawl of a /q link would
+// otherwise fire a scan) and off the private stats page. Well-behaved bots obey
+// this; the /q Function also filters bots/same-site clicks at record time.
+async function emitRobots(distDir) {
+  const body = [
+    'User-agent: *',
+    'Disallow: /q/',
+    'Disallow: /stats',
+    'Disallow: /scan.html',
+    '',
+  ].join('\n');
+  await writeFile(resolve(distDir, 'robots.txt'), body);
 }
 
 // Copy the hand-authored hosted pages (and their images) through to
@@ -250,6 +257,7 @@ export async function build({ ref = null, target = 'local', qHandledByFunction =
     await emitRedirects(codes, DIST, { qHandledByFunction });
     await emitIndex(codes, DIST, srcRoot, baseUrl);
     await emitNotFound(DIST, srcRoot);
+    await emitRobots(DIST);
     await emitHosted(DIST, srcRoot);
     await emitScanner(codes, DIST, srcRoot);
     await emitQrs(codes, DIST, baseUrl);

@@ -69,19 +69,38 @@ export async function onRequestGet({ params, env, request }) {
 
   const hit = Boolean(code);
   const id = hit ? `${code.customerId}-${code.qid}` : `${customerId}-${qid}`;
-  const version = await readVersion(env, origin);
 
-  recordScan(env.SCANS, {
-    id,
-    customerId,
-    qid,
-    type: code?.type,
-    hit,
-    env: env.QRINFO_ENV ?? '',
-    version,
-  });
+  // Only record genuine plaque scans. A real QR scan opens a fresh tab from the
+  // phone's camera: no Referer, a normal mobile/desktop browser UA. Skip the two
+  // big sources of inflation: clicks on our own published /q links (same-site
+  // Referer) and crawlers/bots (UA), which would otherwise count 134 phantom
+  // scans per homepage crawl. See countScan().
+  if (countScan(request, origin)) {
+    const version = await readVersion(env, origin);
+    recordScan(env.SCANS, {
+      id, customerId, qid, type: code?.type,
+      hit, env: env.QRINFO_ENV ?? '', version,
+    });
+  }
 
   return redirectFor(code, customerId, qid);
+}
+
+// Heuristic: is this GET a real plaque scan worth recording?
+function countScan(request, origin) {
+  // 1) Same-site referer → a click on one of our own published /q links (e.g.
+  //    the homepage index), not a scan of a physical plaque.
+  const ref = request.headers.get('referer') || '';
+  if (ref) {
+    try { if (new URL(ref).origin === origin) return false; } catch { /* ignore */ }
+  }
+  // 2) Obvious bots/crawlers/link-previewers by user-agent.
+  const ua = (request.headers.get('user-agent') || '').toLowerCase();
+  if (!ua) return false; // real browsers always send a UA; empty == tooling/bot
+  if (/bot|crawl|spider|slurp|crawler|preview|fetch|curl|wget|httpclient|python-requests|headless|monitor|uptime|facebookexternalhit|embedly|whatsapp|telegram|discord|slack/.test(ua)) {
+    return false;
+  }
+  return true;
 }
 
 // HEAD (uptime checks, bots, link previewers): mirror the redirect so the route
