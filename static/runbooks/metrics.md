@@ -1,4 +1,56 @@
-# Operator runbook — metrics (Umami)
+# Operator runbook — metrics
+
+> **Current architecture (Cloudflare):** each `/q/<cid>/<qid>` scan writes one
+> Workers Analytics Engine (WAE) data point; the owner `/stats` page reads WAE
+> live, and the **customer portal** (`/portal`) reads an hourly export of WAE
+> into D1. The Umami/Pi sections further down are the **retired** self-hosted
+> path, kept for reference/rollback. See [Customer stats portal](#customer-stats-portal--export-worker) below.
+
+---
+
+## Customer stats portal & export worker
+
+Lets each customer log in and see scan stats for *only their own* QR codes.
+Design + Phase-0 runbook: [../plans/customer-portal.md](../plans/customer-portal.md).
+
+**Pieces**
+- **D1 `qrinfo`**, table `scan_hourly` — schema in [../db/schema.sql](../db/schema.sql).
+- **`export-worker/`** (repo root, *separate Worker*) — cron `0 * * * *` aggregates
+  WAE → D1, idempotent upsert. Deploy: `cd export-worker && npx wrangler deploy`.
+  Secrets: `WAE_SQL_TOKEN` (Account Analytics: Read), `EXPORT_TRIGGER_TOKEN`.
+- **`/portal` Pages Functions** (`static/functions/portal/`) — behind Cloudflare
+  Access (One-time PIN). Reads D1, scoped per customer.
+
+**Security model**
+- Access proves *who* (verified email). The Function decides *what they see*:
+  `functions/_lib/access-jwt.mjs` verifies the Access JWT (signature + `aud`),
+  `_lib/tenants.mjs` maps email→customerId(s), `_lib/d1-stats.mjs` binds those ids
+  into the D1 query. Customer never supplies a customerId → no cross-tenant reads.
+- Grant/revoke a customer: edit the `TENANTS` map in `functions/_lib/tenants.mjs`
+  **and** the Access policy, then redeploy the site. `'*'` = owner (sees all).
+- `tenants.mjs` is a module compiled into the Function bundle — it is **never**
+  served publicly (don't turn it back into a `customers.json` under `dist/`).
+
+**Common ops**
+```sh
+# manual export run (e.g. after deploy) — token = EXPORT_TRIGGER_TOKEN secret
+curl "https://qrinfo-export.<subdomain>.workers.dev/run?token=<TOKEN>"
+# one-shot backfill of existing WAE history
+curl "https://qrinfo-export.<subdomain>.workers.dev/run?backfill=1&token=<TOKEN>"
+# inspect D1
+cd static && npx wrangler d1 execute qrinfo --remote \
+  --command "SELECT COUNT(*) n, MIN(day_hour), MAX(day_hour) FROM scan_hourly"
+cd static && npx wrangler d1 execute qrinfo --remote --command "SELECT * FROM export_meta"
+# export-worker logic tests
+cd export-worker && npm test
+```
+
+**Staleness:** the portal shows the last completed hourly export (≤ ~1 h behind).
+Owner `/stats` is live WAE and has no such lag.
+
+---
+
+## (Retired) Umami / Pi path
 
 Scan analytics for the QR site. The redirect server (`serve.mjs`, or later a
 Cloudflare Pages Function) fires a **server-side, fire-and-forget** event to

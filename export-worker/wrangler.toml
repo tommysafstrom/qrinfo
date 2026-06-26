@@ -1,0 +1,41 @@
+# Cloudflare Worker: qrinfo-export
+#
+# A scheduled (cron) Worker that hourly aggregates the qrinfo_scans Workers
+# Analytics Engine dataset into the D1 database `qrinfo` (table scan_hourly),
+# which the /portal Pages Functions read from. This is a SEPARATE Worker from the
+# qrinfo Pages project — Pages Functions cannot carry cron triggers, so the
+# scheduled export lives here and deploys on its own (`wrangler deploy`).
+#
+# Provisioning (see static/plans/customer-portal.md "Phase 0 runbook"):
+#   - create the D1 db, paste its id below (REPLACE <D1_DATABASE_ID>)
+#   - wrangler secret put WAE_SQL_TOKEN        (Account Analytics: Read token)
+#   - wrangler secret put EXPORT_TRIGGER_TOKEN (random string; guards manual /run)
+
+name = "qrinfo-export"
+main = "src/index.mjs"
+compatibility_date = "2026-06-01"
+
+# Hourly, at the top of the hour (UTC).
+[triggers]
+crons = ["0 * * * *"]
+
+# Same D1 database the portal reads. database_name must match `wrangler d1 create`.
+[[d1_databases]]
+binding = "DB"
+database_name = "qrinfo"
+database_id = "<D1_DATABASE_ID>"   # REPLACE after `wrangler d1 create qrinfo`
+
+[vars]
+# Account id for the WAE SQL API (not secret; appears in dashboard URLs).
+CF_ACCOUNT_ID = "bf81aa0d612777a0d69cf259b0dbf94c"
+# WAE dataset to read. Matches the binding in static/wrangler.toml.
+WAE_DATASET = "qrinfo_scans"
+# How many trailing hours each scheduled run re-queries. >1 so WAE's 30–60s
+# ingest lag self-heals via the idempotent upsert without double-counting.
+EXPORT_WINDOW_HOURS = "3"
+# Backfill window (hours) used by /run?backfill=1. ~120 days covers WAE retention.
+BACKFILL_WINDOW_HOURS = "2880"
+
+# Secrets (set with `wrangler secret put`, NOT here):
+#   WAE_SQL_TOKEN        — Bearer token for the Analytics Engine SQL API
+#   EXPORT_TRIGGER_TOKEN — required as ?token= on the manual /run endpoint

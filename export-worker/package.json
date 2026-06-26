@@ -1,0 +1,14 @@
+{
+  "name": "qrinfo-export",
+  "private": true,
+  "type": "module",
+  "description": "Hourly Cron Worker: aggregate qrinfo_scans WAE → D1 scan_hourly for the customer stats portal.",
+  "scripts": {
+    "test": "node --test",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.100.0"
+  }
+}

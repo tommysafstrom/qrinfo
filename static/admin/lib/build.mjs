@@ -123,6 +123,7 @@ async function emitRobots(distDir) {
     'User-agent: *',
     'Disallow: /q/',
     'Disallow: /stats',
+    'Disallow: /portal',
     'Disallow: /scan.html',
     '',
   ].join('\n');
