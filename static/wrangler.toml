@@ -39,7 +39,7 @@ dataset = "qrinfo_scans"
 [[d1_databases]]
 binding = "DB"
 database_name = "qrinfo"
-database_id = "<D1_DATABASE_ID>"   # REPLACE after `wrangler d1 create qrinfo`
+database_id = "788306cb-8c62-4152-8e18-35c3ad18f0dc"   # REPLACE after `wrangler d1 create qrinfo`
 
 # QRINFO_ENV labels scan events. This is the deployed (production) value — the
 # only branch we deploy. `wrangler pages dev` / local runs can override via env.
@@ -55,5 +55,5 @@ CF_ACCOUNT_ID = "bf81aa0d612777a0d69cf259b0dbf94c"
 #                        https://<team>.cloudflareaccess.com
 #   ACCESS_AUD         — the portal Access application's AUD (Application Audience) tag
 # Fill both in after creating the Access app (see plans/customer-portal.md Phase 0).
-ACCESS_TEAM_DOMAIN = "<ACCESS_TEAM_DOMAIN>"   # REPLACE
-ACCESS_AUD = "<ACCESS_AUD>"                   # REPLACE
+ACCESS_TEAM_DOMAIN = "https://curly-rain-1f19.cloudflareaccess.com"   # REPLACE
+ACCESS_AUD = "f72bc1d95a22ead98e8143cc08c5a1892659e256b5564b121b08154b8270c84a"                   # REPLACE

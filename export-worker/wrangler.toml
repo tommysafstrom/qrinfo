@@ -7,7 +7,7 @@
 # scheduled export lives here and deploys on its own (`wrangler deploy`).
 #
 # Provisioning (see static/plans/customer-portal.md "Phase 0 runbook"):
-#   - create the D1 db, paste its id below (REPLACE <D1_DATABASE_ID>)
+#   - create the D1 db, paste its id below (REPLACE 788306cb-8c62-4152-8e18-35c3ad18f0dc)
 #   - wrangler secret put WAE_SQL_TOKEN        (Account Analytics: Read token)
 #   - wrangler secret put EXPORT_TRIGGER_TOKEN (random string; guards manual /run)
 
@@ -25,7 +25,7 @@ crons = ["0 * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "qrinfo"
-database_id = "<D1_DATABASE_ID>"   # REPLACE after `wrangler d1 create qrinfo`
+database_id = "788306cb-8c62-4152-8e18-35c3ad18f0dc"   # REPLACE after `wrangler d1 create qrinfo`
 
 [vars]
 # Account id for the WAE SQL API (not secret; appears in dashboard URLs).
