@@ -14,6 +14,8 @@
 name = "qrinfo-export"
 main = "src/index.mjs"
 compatibility_date = "2026-06-01"
+# Pin the account so token auth works without CLOUDFLARE_ACCOUNT_ID in the env.
+account_id = "bf81aa0d612777a0d69cf259b0dbf94c"
 
 # Hourly, at the top of the hour (UTC).
 [triggers]

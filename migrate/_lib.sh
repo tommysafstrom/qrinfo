@@ -15,20 +15,31 @@ die()  { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 # Run wrangler from a given dir without a global install.
 wrangler() { ( cd "$1" && shift && npx --yes wrangler "$@" ); }
 
-# Require wrangler to be authenticated against the expected account.
+# Require wrangler to be usable. account_id is pinned in the wrangler.toml files,
+# so auth here is either OAuth (wrangler login) or a CLOUDFLARE_API_TOKEN in the
+# env. With token auth, `whoami` can't enumerate accounts and prints a benign
+# error — so we don't rely on whoami. Instead we probe a real, read-only call
+# (d1 list) scoped to the pinned account; if that works, the token/login is good
+# AND has at least D1 read access.
 EXPECTED_ACCOUNT="bf81aa0d612777a0d69cf259b0dbf94c"
 require_auth() {
-  say "Checking wrangler auth…"
-  if ! ( cd "$STATIC_DIR" && npx --yes wrangler whoami ) >/tmp/qrinfo_whoami 2>&1; then
-    cat /tmp/qrinfo_whoami
-    die "wrangler is not logged in. Run: cd static && npx wrangler login"
+  say "Checking wrangler can reach the account…"
+  if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+    ok "using CLOUDFLARE_API_TOKEN from the environment"
   fi
-  if ! grep -q "$EXPECTED_ACCOUNT" /tmp/qrinfo_whoami; then
-    cat /tmp/qrinfo_whoami
-    warn "Expected account $EXPECTED_ACCOUNT not found above. Make sure you're on the right account."
-    read -r -p "Continue anyway? [y/N] " a; [[ "$a" == [yY] ]] || die "aborted"
+  if ( cd "$STATIC_DIR" && npx --yes wrangler d1 list ) >/tmp/qrinfo_probe 2>&1; then
+    ok "wrangler authenticated (d1 list succeeded)"
+  else
+    cat /tmp/qrinfo_probe
+    cat >&2 <<'EOF'
+
+Could not reach the account. Either:
+  • OAuth: run `unset CLOUDFLARE_API_TOKEN; cd static && npx wrangler login`, or
+  • Token: ensure CLOUDFLARE_API_TOKEN is exported and has scopes:
+      D1: Edit · Workers Scripts: Edit · Cloudflare Pages: Edit · Account Analytics: Read
+EOF
+    die "wrangler auth/permission check failed"
   fi
-  ok "wrangler authenticated"
 }
 
 # Replace the <D1_DATABASE_ID> placeholder in a wrangler.toml with a real id.

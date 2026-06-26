@@ -18,6 +18,9 @@
 name = "qrinfo"
 pages_build_output_dir = "./dist"
 compatibility_date = "2026-06-01"
+# Pin the account so token auth works without CLOUDFLARE_ACCOUNT_ID in the env
+# (token auth can't enumerate accounts → "failed to retrieve account IDs").
+account_id = "bf81aa0d612777a0d69cf259b0dbf94c"
 
 # Workers Analytics Engine — one data point per QR scan, written by
 # functions/q/[customerId]/[qid].js via env.SCANS. The dataset auto-creates on
