@@ -10,7 +10,7 @@
 
 import { verifyAccessJwt } from '../_lib/access-jwt.mjs';
 import { scopeForEmail } from '../_lib/tenants.mjs';
-import { codeTotals, dailyForCode } from '../_lib/d1-stats.mjs';
+import { codeTotals, dailyForCode, dailyTotals } from '../_lib/d1-stats.mjs';
 
 export async function onRequestGet({ request, env }) {
   let email;
@@ -28,10 +28,23 @@ export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const days = url.searchParams.get('days');
   const code = url.searchParams.get('code');
+  const series = url.searchParams.get('series');
+  // ?codes=2-5,2-7 restricts the combined graph to a selected subset.
+  // ?codes=none means "nothing selected" → an empty series (not "all").
+  const codesRaw = url.searchParams.get('codes') || '';
+  const noneSelected = codesRaw.trim() === 'none';
+  const codes = codesRaw.split(',').map(s => s.trim()).filter(Boolean);
   try {
-    const result = code
-      ? await dailyForCode(env, scope, code, days)
-      : await codeTotals(env, scope, days);
+    let result;
+    if (series === 'daily') {
+      result = noneSelected
+        ? { days: null, codeIds: [], rows: [] }
+        : await dailyTotals(env, scope, days, codes);        // graph: combined daily total
+    } else if (code) {
+      result = await dailyForCode(env, scope, code, days);   // table drill-down: one code
+    } else {
+      result = await codeTotals(env, scope, days);           // table: per-code totals
+    }
     return Response.json(result, { headers: { 'cache-control': 'no-store' } });
   } catch (err) {
     const status = err.message === 'forbidden' ? 403 : 502;
