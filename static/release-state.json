@@ -1,13 +1,20 @@
 {
   "version": 1,
   "current": {
-    "tag": "release/28",
-    "commit": "d6e9de3",
-    "cfDeployId": "7a91f85c",
-    "deployedAt": "2026-06-26T17:49:15.165Z",
-    "url": "https://7a91f85c.qrinfo.pages.dev"
+    "tag": "release/29",
+    "commit": "f55a696",
+    "cfDeployId": "0dca7afe",
+    "deployedAt": "2026-06-26T18:03:23.674Z",
+    "url": "https://0dca7afe.qrinfo.pages.dev"
   },
   "previous": [
+    {
+      "tag": "release/28",
+      "commit": "d6e9de3",
+      "cfDeployId": "7a91f85c",
+      "deployedAt": "2026-06-26T17:49:15.165Z",
+      "url": "https://7a91f85c.qrinfo.pages.dev"
+    },
     {
       "tag": "release/27",
       "commit": "dc70430",
